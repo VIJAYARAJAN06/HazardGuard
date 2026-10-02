@@ -23,8 +23,9 @@ router = APIRouter()
 
 # ── HEALTH / SYSTEM STATUS ─────────────────────────────────────────────────────
 
-@router.get("/")
-def root():
+@router.get("/api")
+@router.get("/api/health")
+def api_health():
     return {
         "system": "HAZARDGUARD Intelligent Safety Monitoring Core",
         "version": "2.0.0",

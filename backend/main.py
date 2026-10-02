@@ -50,14 +50,12 @@ if os.path.exists(frontend_dir):
     app.mount("/css", StaticFiles(directory=os.path.join(frontend_dir, "css")), name="css")
     app.mount("/js", StaticFiles(directory=os.path.join(frontend_dir, "js")), name="js")
 
-    @app.get("/app")
-    @app.get("/dashboard")
-    @app.get("/monitoring")
-    @app.get("/incidents")
-    def serve_frontend_alias():
-        return FileResponse(os.path.join(frontend_dir, "index.html"))
-
-    @app.get("/ui")
+    @app.get("/", include_in_schema=False)
+    @app.get("/app", include_in_schema=False)
+    @app.get("/dashboard", include_in_schema=False)
+    @app.get("/monitoring", include_in_schema=False)
+    @app.get("/incidents", include_in_schema=False)
+    @app.get("/ui", include_in_schema=False)
     def serve_frontend():
         return FileResponse(os.path.join(frontend_dir, "index.html"))
 
