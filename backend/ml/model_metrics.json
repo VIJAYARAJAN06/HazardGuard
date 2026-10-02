@@ -1,0 +1,37 @@
+{
+  "model_architecture": "Multinomial Logistic Risk Gradient Classifier",
+  "dataset_samples": 3000,
+  "train_samples": 2400,
+  "test_samples": 600,
+  "test_accuracy": 99.33,
+  "macro_precision": 98.99,
+  "macro_recall": 98.98,
+  "macro_f1_score": 98.98,
+  "class_breakdown": {
+    "Normal Baseline": {
+      "precision": 99.72,
+      "recall": 100.0,
+      "f1": 99.86
+    },
+    "Warning State": {
+      "precision": 99.32,
+      "recall": 97.99,
+      "f1": 98.65
+    },
+    "Critical Threat": {
+      "precision": 97.92,
+      "recall": 98.95,
+      "f1": 98.43
+    }
+  },
+  "trained_at": "2026-10-02T11:18:56.088166",
+  "features_evaluated": [
+    "gas_level",
+    "temperature",
+    "humidity",
+    "movement",
+    "gas_rate_per_min",
+    "inactivity_duration_sec",
+    "posture_code"
+  ]
+}

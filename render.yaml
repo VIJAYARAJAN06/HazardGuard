@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: hazardguard
+    env: python
+    buildCommand: "pip install -r backend/requirements.txt && cd backend && python ml/train.py"
+    startCommand: "cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
