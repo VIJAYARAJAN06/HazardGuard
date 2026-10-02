@@ -1,0 +1,19 @@
+{
+  "python.defaultInterpreterPath": "C:\\Users\\vijay\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+  "python.interpreter.infoVisibility": "always",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/backend",
+    "${workspaceFolder}/backend/api",
+    "${workspaceFolder}/backend/database",
+    "${workspaceFolder}/backend/services",
+    "${workspaceFolder}/backend/models",
+    "${workspaceFolder}/backend/ml",
+    "C:\\Users\\vijay\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages"
+  ],
+  "pyrefly.pythonPath": "C:\\Users\\vijay\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+  "pyrefly.interpreter": "C:\\Users\\vijay\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+  "pyrefly.extraPaths": [
+    "${workspaceFolder}/backend",
+    "C:\\Users\\vijay\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages"
+  ]
+}
