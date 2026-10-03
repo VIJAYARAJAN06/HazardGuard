@@ -105,7 +105,8 @@ async function checkAuthSession() {
       logoutUser();
       return false;
     }
-    currentUser = await meRes.json();
+    const meData = await meRes.json();
+    currentUser = meData.user || meData;
     localStorage.setItem('hazardguard_user', JSON.stringify(currentUser));
   } catch {
     // If backend unreachable temporarily keep cached user
@@ -146,7 +147,7 @@ window.handleLoginSubmit = async (e) => {
       return;
     }
 
-    authToken = data.access_token;
+    authToken = data.access_token || data.token;
     currentUser = data.user;
     localStorage.setItem('hazardguard_token', authToken);
     localStorage.setItem('hazardguard_user', JSON.stringify(currentUser));
@@ -197,7 +198,7 @@ window.handleSetupSubmit = async (e) => {
       return;
     }
 
-    authToken = data.access_token;
+    authToken = data.access_token || data.token;
     currentUser = data.user;
     localStorage.setItem('hazardguard_token', authToken);
     localStorage.setItem('hazardguard_user', JSON.stringify(currentUser));
