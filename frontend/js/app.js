@@ -195,6 +195,18 @@ window.handleSetupSubmit = async (e) => {
         errBox.textContent = data.detail || 'Initial setup failed.';
         errBox.style.display = 'block';
       }
+      // If already initialized, automatically switch to sign-in form
+      if (data.detail && data.detail.includes('already configured')) {
+        setTimeout(() => {
+          const lForm = document.getElementById('login-form');
+          const sForm = document.getElementById('setup-form');
+          const mBadge = document.getElementById('auth-mode-badge');
+          if (lForm) lForm.style.display = 'block';
+          if (sForm) sForm.style.display = 'none';
+          if (mBadge) mBadge.textContent = 'ENTERPRISE SIGN IN';
+          if (errBox) errBox.style.display = 'none';
+        }, 1500);
+      }
       return;
     }
 
@@ -214,6 +226,17 @@ window.handleSetupSubmit = async (e) => {
       errBox.style.display = 'block';
     }
   }
+};
+
+window.toggleToLoginForm = () => {
+  const lForm = document.getElementById('login-form');
+  const sForm = document.getElementById('setup-form');
+  const mBadge = document.getElementById('auth-mode-badge');
+  const errBox = document.getElementById('auth-error-alert');
+  if (lForm) lForm.style.display = 'block';
+  if (sForm) sForm.style.display = 'none';
+  if (mBadge) mBadge.textContent = 'ENTERPRISE SIGN IN';
+  if (errBox) errBox.style.display = 'none';
 };
 
 window.logoutUser = () => {
