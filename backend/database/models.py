@@ -1,12 +1,14 @@
 """
 SQLAlchemy ORM models for HAZARDGUARD:
+- User (Role-Based Authentication: ADMIN, SAFETY_OPERATIONS, VIEWER)
 - Worker
 - Zone
 - Profile (Exactly 4 slots)
 - Incident (with 5-stage lifecycle)
-- IncidentTransition (audit log)
-- SensorReading
+- IncidentTransition (audit trail)
+- SensorReadingHistory
 - SystemLog
+- AuditLog (Privileged action logging)
 """
 
 from datetime import datetime
@@ -16,6 +18,20 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from database.connection import Base
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(64), unique=True, nullable=False, index=True)
+    email = Column(String(128), unique=True, nullable=False, index=True)
+    password_hash = Column(String(256), nullable=False)
+    full_name = Column(String(128), nullable=False)
+    role = Column(String(32), nullable=False) # "ADMIN", "SAFETY_OPERATIONS", "VIEWER"
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_login = Column(DateTime, nullable=True)
 
 
 class Zone(Base):
@@ -61,7 +77,7 @@ class Profile(Base):
 
     # JSON stored as text
     enabled_sensors = Column(Text, default="[]")       # ["gas", "temperature", "humidity", "movement", "camera"]
-    thresholds = Column(Text, default="{}")            # {"gas_warning": 30, "gas_critical": 60, "temp_warning": 35, "temp_critical": 50}
+    thresholds = Column(Text, default="{}")            # {"gas_warning": 30, "gas_critical": 60, "temp_warning": 35, "temp_critical": 50, "humidity_warning": 70}
     expected_events = Column(Text, default="[]")       # ["entry_detected", "periodic_movement", "exit_confirmed"]
     alert_contacts = Column(Text, default="[]")        # ["supervisor@example.com"]
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -80,7 +96,8 @@ class Profile(Base):
         except Exception:
             return {
                 "gas_warning": 30.0, "gas_critical": 60.0,
-                "temp_warning": 35.0, "temp_critical": 50.0
+                "temp_warning": 35.0, "temp_critical": 50.0,
+                "humidity_warning": 70.0, "humidity_critical": 85.0
             }
 
     def get_expected_events(self):
@@ -100,7 +117,7 @@ class Incident(Base):
     __tablename__ = "incidents"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    incident_code = Column(String(32), unique=True, nullable=False) # e.g. "INC-1001"
+    incident_code = Column(String(32), unique=True, nullable=False, index=True) # e.g. "INC-1001"
     zone = Column(String(32), nullable=False)
     worker_id = Column(String(32), nullable=True)
     worker_name = Column(String(128), nullable=True)
@@ -114,7 +131,7 @@ class Incident(Base):
     explanation = Column(Text, nullable=False)
     sensor_snapshot = Column(Text, default="{}")
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     acknowledged_at = Column(DateTime, nullable=True)
     acknowledged_by = Column(String(128), nullable=True)
@@ -161,15 +178,16 @@ class SensorReadingHistory(Base):
     __tablename__ = "sensor_readings"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    zone = Column(String(32), nullable=False)
+    zone = Column(String(32), nullable=False, index=True)
     worker_id = Column(String(32), nullable=True)
     gas_level = Column(Float, default=0.0)
     temperature = Column(Float, default=22.0)
     humidity = Column(Float, default=50.0)
     movement = Column(Boolean, default=True)
     person_detected = Column(Boolean, default=True)
+    posture = Column(String(32), default="STANDING")
     severity_assessed = Column(String(32), default="Normal")
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
 
 
 class SystemLog(Base):
@@ -180,3 +198,17 @@ class SystemLog(Base):
     message = Column(Text, nullable=False)
     level = Column(String(16), default="INFO")
     timestamp = Column(DateTime, default=datetime.utcnow)
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, nullable=True)
+    username = Column(String(64), nullable=False)
+    role = Column(String(32), nullable=False)
+    action = Column(String(64), nullable=False) # e.g. "UPDATE_PROFILE", "ACKNOWLEDGE_INCIDENT", "ASSIGN_WORKER"
+    target = Column(String(128), nullable=False) # e.g. "Profile slot_1", "Incident INC-1002"
+    notes = Column(Text, default="")
+    outcome = Column(String(32), default="SUCCESS")
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)

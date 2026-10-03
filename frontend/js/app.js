@@ -28,18 +28,242 @@ const PAGES = [
 let currentPage = 'dashboard';
 let wsConn = null;
 let activeWebcamStream = null;
-let liveTelemetryHistory = []; // rolling 30 seconds for live SVG charts
+// AUTHENTICATION & ROLE STATE
+let authToken = localStorage.getItem('hazardguard_token') || '';
+let currentUser = null;
+try {
+  const cachedUser = localStorage.getItem('hazardguard_user');
+  if (cachedUser) currentUser = JSON.parse(cachedUser);
+} catch {
+  currentUser = null;
+}
 
 // ── SHARED UTILITIES & FETCH WRAPPER ─────────────────────────────────────────
 
 async function apiFetch(path, options = {}) {
   try {
+    const headers = options.headers || {};
+    if (authToken && !headers['Authorization']) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+    options.headers = headers;
+
     const res = await fetch(`${API}${path}`, options);
+    if (res.status === 401) {
+      // Token expired or invalid
+      logoutUser();
+      return null;
+    }
+    if (res.status === 403) {
+      alert("Permission Denied: Your assigned role does not have authorization for this action.");
+      return null;
+    }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } catch (err) {
     console.warn(`API Error [${path}]:`, err);
     return null;
+  }
+}
+
+// ── AUTHENTICATION LIFECYCLE & ACCESS CONTROL ─────────────────────────────
+
+async function checkAuthSession() {
+  const overlay = document.getElementById('auth-overlay');
+  const loginForm = document.getElementById('login-form');
+  const setupForm = document.getElementById('setup-form');
+  const modalSub = document.getElementById('auth-modal-sub');
+
+  try {
+    const statusData = await fetch(`${API}/api/auth/setup-status`).then(r => r.json());
+    if (!statusData.initialized) {
+      // Show First-Time Setup Wizard
+      if (overlay) overlay.style.display = 'flex';
+      if (loginForm) loginForm.style.display = 'none';
+      if (setupForm) setupForm.style.display = 'block';
+      if (modalSub) modalSub.textContent = 'System Initial Setup — Create Primary Safety Administrator';
+      return false;
+    }
+  } catch (err) {
+    console.warn('Setup status check failed:', err);
+  }
+
+  if (!authToken || !currentUser) {
+    if (overlay) overlay.style.display = 'flex';
+    if (loginForm) loginForm.style.display = 'block';
+    if (setupForm) setupForm.style.display = 'none';
+    if (modalSub) modalSub.textContent = 'Intelligent Hazard-Zone Personnel Monitoring System';
+    return false;
+  }
+
+  // Verify token with backend
+  try {
+    const meRes = await fetch(`${API}/api/auth/me`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    if (!meRes.ok) {
+      logoutUser();
+      return false;
+    }
+    currentUser = await meRes.json();
+    localStorage.setItem('hazardguard_user', JSON.stringify(currentUser));
+  } catch {
+    // If backend unreachable temporarily keep cached user
+  }
+
+  if (overlay) overlay.style.display = 'none';
+  updateUserUI();
+  return true;
+}
+
+window.fillLogin = (username, password) => {
+  const uEl = document.getElementById('login-username');
+  const pEl = document.getElementById('login-password');
+  if (uEl) uEl.value = username;
+  if (pEl) pEl.value = password;
+};
+
+window.handleLoginSubmit = async (e) => {
+  e.preventDefault();
+  const errBox = document.getElementById('auth-error-alert');
+  if (errBox) errBox.style.display = 'none';
+
+  const username = document.getElementById('login-username')?.value.trim();
+  const password = document.getElementById('login-password')?.value;
+
+  try {
+    const res = await fetch(`${API}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      if (errBox) {
+        errBox.textContent = data.detail || 'Authentication failed. Please verify credentials.';
+        errBox.style.display = 'block';
+      }
+      return;
+    }
+
+    authToken = data.access_token;
+    currentUser = data.user;
+    localStorage.setItem('hazardguard_token', authToken);
+    localStorage.setItem('hazardguard_user', JSON.stringify(currentUser));
+
+    const overlay = document.getElementById('auth-overlay');
+    if (overlay) overlay.style.display = 'none';
+
+    updateUserUI();
+
+    // Role-appropriate Landing page:
+    // SAFETY OPERATIONS lands on Live Monitoring
+    // ADMIN / VIEWER lands on Dashboard
+    if (currentUser.role === 'SAFETY_OPERATIONS') {
+      navigate('monitoring');
+    } else {
+      navigate('dashboard');
+    }
+  } catch (err) {
+    if (errBox) {
+      errBox.textContent = 'Network error contacting HazardGuard auth service.';
+      errBox.style.display = 'block';
+    }
+  }
+};
+
+window.handleSetupSubmit = async (e) => {
+  e.preventDefault();
+  const errBox = document.getElementById('auth-error-alert');
+  if (errBox) errBox.style.display = 'none';
+
+  const full_name = document.getElementById('setup-fullname')?.value.trim();
+  const email = document.getElementById('setup-email')?.value.trim();
+  const username = document.getElementById('setup-username')?.value.trim();
+  const password = document.getElementById('setup-password')?.value;
+
+  try {
+    const res = await fetch(`${API}/api/auth/setup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ full_name, email, username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      if (errBox) {
+        errBox.textContent = data.detail || 'Initial setup failed.';
+        errBox.style.display = 'block';
+      }
+      return;
+    }
+
+    authToken = data.access_token;
+    currentUser = data.user;
+    localStorage.setItem('hazardguard_token', authToken);
+    localStorage.setItem('hazardguard_user', JSON.stringify(currentUser));
+
+    const overlay = document.getElementById('auth-overlay');
+    if (overlay) overlay.style.display = 'none';
+
+    updateUserUI();
+    navigate('dashboard');
+  } catch (err) {
+    if (errBox) {
+      errBox.textContent = 'Setup submission network error.';
+      errBox.style.display = 'block';
+    }
+  }
+};
+
+window.logoutUser = () => {
+  authToken = '';
+  currentUser = null;
+  localStorage.removeItem('hazardguard_token');
+  localStorage.removeItem('hazardguard_user');
+
+  const overlay = document.getElementById('auth-overlay');
+  const loginForm = document.getElementById('login-form');
+  const setupForm = document.getElementById('setup-form');
+  if (overlay) overlay.style.display = 'flex';
+  if (loginForm) loginForm.style.display = 'block';
+  if (setupForm) setupForm.style.display = 'none';
+};
+
+window.handleUserMenuToggle = () => {
+  if (confirm(`Active Account: ${currentUser?.full_name || 'User'} (${currentUser?.role || 'Guest'})\n\nWould you like to sign out?`)) {
+    logoutUser();
+  }
+};
+
+function updateUserUI() {
+  if (!currentUser) return;
+  const nameEl = document.getElementById('header-user-name');
+  const roleEl = document.getElementById('header-user-role');
+  const avatarEl = document.getElementById('header-user-avatar');
+  const resetBtn = document.getElementById('sidebar-reset-btn');
+
+  if (nameEl) nameEl.textContent = currentUser.full_name || currentUser.username;
+  if (roleEl) {
+    const roleLabels = {
+      'ADMIN': 'System / Plant Admin',
+      'SAFETY_OPERATIONS': 'Safety Supervisor',
+      'VIEWER': 'Auditor / Read-Only'
+    };
+    roleEl.textContent = roleLabels[currentUser.role] || currentUser.role;
+  }
+  if (avatarEl) {
+    const initials = (currentUser.full_name || currentUser.username || 'HG')
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+    avatarEl.innerHTML = `<span>${initials}</span>`;
+  }
+
+  // Restrict Admin-only Reset button on sidebar for non-admins
+  if (resetBtn) {
+    resetBtn.style.display = currentUser.role === 'ADMIN' ? 'flex' : 'none';
   }
 }
 
@@ -1680,4 +1904,16 @@ async function renderSettings(el) {
 // ── INITIAL BOOT ─────────────────────────────────────────────────────────────
 initClock();
 buildNav();
-renderCurrentPage();
+
+(async () => {
+  const isAuthed = await checkAuthSession();
+  if (isAuthed && currentUser) {
+    if (currentUser.role === 'SAFETY_OPERATIONS') {
+      navigate('monitoring');
+    } else {
+      navigate('dashboard');
+    }
+  } else {
+    renderCurrentPage();
+  }
+})();

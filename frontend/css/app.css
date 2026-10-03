@@ -1318,28 +1318,79 @@ body {
   justify-content: center;
 }
 
-/* Responsive Rules */
-@media (max-width: 1200px) {
-  .kpi-grid, .zone-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .grid-split-7-5, .grid-split-8-4 {
-    grid-template-columns: 1fr;
-  }
+/* Auth Modal Overlay & Card */
+#auth-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
 }
 
-@media (max-width: 768px) {
-  #sidebar {
-    width: 68px;
-    min-width: 68px;
-  }
-  .brand-text, .sidebar-section-label, .sidebar-nav button span:not(.nav-icon), .sidebar-footer {
-    display: none;
-  }
-  #main-viewport {
-    margin-left: 68px;
-  }
-  .kpi-grid, .zone-grid, .grid-2, .grid-3, .grid-4 {
-    grid-template-columns: 1fr;
-  }
+.auth-card {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  width: 90%;
+  max-width: 440px;
+  box-shadow: var(--shadow-lg);
+  animation: fadeIn 0.2s ease;
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.auth-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.auth-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.auth-badge {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid var(--primary-border);
+}
+
+.auth-error {
+  background: var(--sev-critical-bg);
+  color: var(--sev-critical-text);
+  border: 1px solid var(--sev-critical-border);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
+.auth-quick-select {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+  text-align: center;
+}
+

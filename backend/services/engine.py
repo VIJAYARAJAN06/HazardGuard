@@ -2,6 +2,7 @@
 HAZARDGUARD Monitoring & Intelligence Engine.
 Deterministic multi-factor severity evaluation, multi-source evidence correlation,
 Expected vs. Actual state checks, and temporal duration reasoning.
+End-to-end support for Gas, Temperature, Humidity, Movement, and Posture.
 """
 
 from typing import Dict, Any, List, Optional
@@ -12,19 +13,6 @@ def evaluate_severity(reading: Dict[str, Any], profile: Optional[Dict[str, Any]]
     """
     Evaluate sensor reading against profile thresholds, expected behavior,
     and temporal sliding window analysis.
-
-    Returns:
-        severity       : Normal | Warning | High | Critical
-        evidence       : list of specific empirical observations
-        mechanisms     : list of triggered failure/hazard mechanisms
-        expected_state : description of expected personnel/environmental conditions
-        actual_state   : description of observed state
-        mismatch_found : bool
-        incident_type  : specific operational classification
-        recommended_action : actionable tactical guideline
-        explanation    : comprehensive operational synthesis
-        temporal       : rate of change and duration metrics
-        sensor_status  : map of active/disabled status per sensor
     """
     zone = reading.get("zone", "Zone 01")
     temporal = record_reading(zone, reading)
@@ -35,7 +23,9 @@ def evaluate_severity(reading: Dict[str, Any], profile: Optional[Dict[str, Any]]
         "gas_warning": 30.0,
         "gas_critical": 60.0,
         "temp_warning": 35.0,
-        "temp_critical": 50.0
+        "temp_critical": 50.0,
+        "humidity_warning": 70.0,
+        "humidity_critical": 85.0
     }
     expected_events = ["entry_detected", "periodic_movement", "exit_confirmed"]
 
@@ -60,6 +50,7 @@ def evaluate_severity(reading: Dict[str, Any], profile: Optional[Dict[str, Any]]
     movement = bool(reading.get("movement", True))
     gas = float(reading.get("gas_level", 0.0))
     temp = float(reading.get("temperature", 22.0))
+    hum = float(reading.get("humidity", 50.0))
     posture = str(reading.get("posture", "STANDING")).upper()
 
     # 3. Expected State Definition
@@ -70,6 +61,7 @@ def evaluate_severity(reading: Dict[str, Any], profile: Optional[Dict[str, Any]]
         expected_items.append("Monitored personnel presence in designated safe zone")
     expected_items.append(f"Safe atmospheric gas < {thresholds.get('gas_warning', 30.0)}%")
     expected_items.append(f"Thermal levels < {thresholds.get('temp_warning', 35.0)}°C")
+    expected_items.append(f"Humidity < {thresholds.get('humidity_warning', 70.0)}%")
     expected_state_str = "; ".join(expected_items)
 
     # 4. Actual State Definition
@@ -83,6 +75,8 @@ def evaluate_severity(reading: Dict[str, Any], profile: Optional[Dict[str, Any]]
         actual_items.append("Gas: Sensor Disabled")
     if sensor_status["temperature"] == "ACTIVE":
         actual_items.append(f"Temp: {temp:.1f}°C")
+    if sensor_status["humidity"] == "ACTIVE":
+        actual_items.append(f"Humidity: {hum:.1f}% ({temporal.get('humidity_trend', 'STEADY')})")
     actual_state_str = "; ".join(actual_items)
 
     # 5. Sensor Evaluation (Only ACTIVE sensors participate)
@@ -90,6 +84,8 @@ def evaluate_severity(reading: Dict[str, Any], profile: Optional[Dict[str, Any]]
     gas_critical = False
     temp_elevated = False
     temp_critical = False
+    hum_elevated = False
+    hum_critical = False
 
     if sensor_status["gas"] == "ACTIVE":
         if gas >= thresholds.get("gas_critical", 60.0):
@@ -110,6 +106,14 @@ def evaluate_severity(reading: Dict[str, Any], profile: Optional[Dict[str, Any]]
             temp_elevated = True
             evidence.append(f"Elevated Temperature: {temp:.1f}°C exceeds threshold ({thresholds.get('temp_warning', 35.0)}°C)")
 
+    if sensor_status["humidity"] == "ACTIVE":
+        if hum >= thresholds.get("humidity_critical", 85.0):
+            hum_critical = True
+            evidence.append(f"Critical Moisture/Vapor: Humidity at {hum:.1f}% exceeds safety threshold ({thresholds.get('humidity_critical', 85.0)}%)")
+        elif hum >= thresholds.get("humidity_warning", 70.0):
+            hum_elevated = True
+            evidence.append(f"Elevated Humidity: {hum:.1f}% indicates moisture/vapor buildup")
+
     # 6. Worker & Movement Evaluation
     no_movement = False
     if sensor_status["movement"] == "ACTIVE":
@@ -126,7 +130,7 @@ def evaluate_severity(reading: Dict[str, Any], profile: Optional[Dict[str, Any]]
         evidence.append("Expected personnel presence not detected in designated zone")
 
     # 7. Multi-source Correlation
-    env_abnormal = (gas_elevated or gas_critical or temp_elevated or temp_critical)
+    env_abnormal = (gas_elevated or gas_critical or temp_elevated or temp_critical or hum_critical)
 
     if env_abnormal and no_movement and person_detected:
         mechanisms.append("Mechanism 3: Abnormal toxic/thermal environment correlated with worker immobility (Personnel Distress)")
@@ -137,10 +141,10 @@ def evaluate_severity(reading: Dict[str, Any], profile: Optional[Dict[str, Any]]
     mismatch_found = len(mechanisms) > 0 or len(evidence) > 0
 
     # 8. Deterministic Severity Classification
-    # Score calculation
     critical_signals = sum([
         gas_critical,
         temp_critical,
+        hum_critical,
         (no_movement and env_abnormal),
         (posture in ("DOWN", "LYING")),
         (temporal["inactivity_duration_sec"] >= 45.0 and env_abnormal)
@@ -151,7 +155,8 @@ def evaluate_severity(reading: Dict[str, Any], profile: Optional[Dict[str, Any]]
         gas_critical,
         temp_critical,
         no_movement and temporal["inactivity_duration_sec"] >= 30.0,
-        temp_elevated and no_movement
+        temp_elevated and no_movement,
+        hum_elevated and no_movement
     ])
 
     if critical_signals >= 2 or (gas_critical and no_movement) or (posture in ("DOWN", "LYING") and env_abnormal):

@@ -4,13 +4,90 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>HAZARDGUARD — Intelligent Hazard-Zone Personnel Monitoring System</title>
-  <meta name="description" content="Industrial Safety Personnel Monitoring System with Telemetry Surveillance, Deterministic Intelligence, and ML Early Warning."/>
+  <meta name="description" content="Industrial Safety Personnel Monitoring System with Telemetry Surveillance, Deterministic Intelligence, Role-Based Access, and ML Early Warning."/>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/app.css"/>
 </head>
 <body>
+
+<!-- AUTH OVERLAY CONTAINER (LOGIN & FIRST-TIME SETUP) -->
+<div id="auth-overlay" style="display:none">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="brand-icon-box" style="margin: 0 auto 12px auto; width: 44px; height: 44px;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="m9 12 2 2 4-4"/>
+        </svg>
+      </div>
+      <h1 class="auth-title">HAZARDGUARD</h1>
+      <p class="auth-subtitle">Intelligent Hazard-Zone Personnel Monitoring System</p>
+      <div class="auth-badge" id="auth-mode-badge">ENTERPRISE SIGN IN</div>
+    </div>
+
+    <!-- Error message alert -->
+    <div id="auth-error-alert" style="display:none" class="auth-error"></div>
+
+    <!-- Standard Sign In Form -->
+    <form id="login-form" onsubmit="handleLoginSubmit(event)">
+      <div class="form-group">
+        <label class="form-label">Email or Username</label>
+        <input type="text" class="form-input" id="login-username" required placeholder="e.g. admin or operator@hazardguard.io"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-input" id="login-password" required placeholder="••••••••"/>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;padding:10px;font-size:13px;margin-top:8px">
+        Sign In to Safety Console
+      </button>
+
+      <!-- Quick Demo Access Credentials -->
+      <div class="auth-quick-select">
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px">Demo Credentials (Pre-Configured)</div>
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:6px">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="fillLogin('admin', 'admin123')">
+            <b>Admin</b>
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="fillLogin('operator', 'operator123')">
+            <b>Operator</b>
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="fillLogin('auditor', 'auditor123')">
+            <b>Auditor</b>
+          </button>
+        </div>
+      </div>
+    </form>
+
+    <!-- First-Time Initial Setup Form (Hidden by default unless database is empty) -->
+    <form id="setup-form" onsubmit="handleSetupSubmit(event)" style="display:none">
+      <div style="background:var(--primary-light);border:1px solid var(--primary-border);border-radius:var(--radius-md);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--primary)">
+        <b>First-Time Setup Required:</b> Create the primary administrator account to initialize industrial safety perimeters.
+      </div>
+      <div class="form-group">
+        <label class="form-label">Administrator Full Name</label>
+        <input type="text" class="form-input" id="setup-fullname" required placeholder="e.g. Lead Safety Manager"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Admin Email</label>
+        <input type="email" class="form-input" id="setup-email" required placeholder="admin@hazardguard.io"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input type="text" class="form-input" id="setup-username" required value="admin"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Master Password</label>
+        <input type="password" class="form-input" id="setup-password" required placeholder="••••••••"/>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;padding:10px;font-size:13px;margin-top:8px">
+        Complete Initial Setup & Launch
+      </button>
+    </form>
+  </div>
+</div>
 
 <!-- APP WRAPPER -->
 <div id="app-root">
@@ -39,13 +116,13 @@
     <div class="sidebar-footer">
       <div class="system-status-card">
         <div class="sys-pulse-row">
-          <span class="status-indicator online"></span>
-          <span class="sys-title">SYSTEM ONLINE</span>
+          <span class="status-indicator online" id="sidebar-pulse-dot"></span>
+          <span class="sys-title" id="sidebar-sys-status-text">SYSTEM ONLINE</span>
         </div>
         <div class="sys-meta" id="sidebar-db-status">SQLite WAL · Operational</div>
       </div>
 
-      <button type="button" onclick="confirmReset()" class="btn-reset-system" title="Clear incident records and reset deterministic scenario">
+      <button type="button" onclick="confirmReset()" class="btn-reset-system" id="sidebar-reset-btn" title="Clear incident records and reset deterministic scenario">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
           <path d="M3 3v5h5"/>
@@ -102,15 +179,18 @@
           <span class="notif-badge" id="header-alert-count">0</span>
         </div>
 
-        <!-- User Profile Pill -->
-        <div class="header-item user-profile-pill">
-          <div class="user-avatar">
+        <!-- User Profile Pill & Logout -->
+        <div class="header-item user-profile-pill" id="user-profile-widget" onclick="handleUserMenuToggle()" style="cursor:pointer" title="Click for Account / Sign Out">
+          <div class="user-avatar" id="header-user-avatar">
             <span>VK</span>
           </div>
           <div class="user-info">
-            <div class="user-name">Safety Supervisor</div>
-            <div class="user-role">Control Room Operator</div>
+            <div class="user-name" id="header-user-name">Safety Supervisor</div>
+            <div class="user-role" id="header-user-role">Control Room Operator</div>
           </div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); logoutUser()" style="margin-left:4px;padding:3px 8px" title="Sign Out">
+            Sign Out
+          </button>
         </div>
       </div>
     </header>
@@ -135,7 +215,7 @@
     </div>
     <h3 class="modal-title">Reset Incident & Telemetry State?</h3>
     <p class="modal-desc">
-      This will permanently purge recorded incidents from SQLite and restart the deterministic scenario engine to initial baseline surveillance.
+      This will permanently purge recorded incidents from the database and restart the deterministic scenario engine to initial baseline surveillance.
     </p>
     <div class="modal-actions">
       <button type="button" class="btn btn-secondary" onclick="document.getElementById('reset-modal').style.display='none'">Cancel</button>

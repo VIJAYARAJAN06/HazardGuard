@@ -1,11 +1,23 @@
 """
 Pydantic request/response schemas for HAZARDGUARD.
-Defines types for Workers, Profiles (4 slots), Incidents, Lifecycle Transitions,
-Sensors, and Scenarios.
+Defines types for Authentication, Setup, Workers, Profiles (4 slots),
+Incidents, Lifecycle Transitions, Sensors, and Scenarios.
 """
 
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class SetupAdminRequest(BaseModel):
+    username: str = "admin"
+    password: str
+    email: str
+    full_name: str
 
 
 class SensorReading(BaseModel):
@@ -48,6 +60,7 @@ class AcknowledgeRequest(BaseModel):
 
 class WorkerUpdate(BaseModel):
     zone_id: Optional[str] = None
+    profile_id: Optional[str] = None
     connection_status: Optional[str] = None
     active_status: Optional[str] = None
     current_posture: Optional[str] = None

@@ -1,9 +1,25 @@
 services:
   - type: web
-    name: hazardguard
+    name: hazardguard-enterprise
     env: python
-    buildCommand: "pip install -r backend/requirements.txt && cd backend && python ml/train.py"
-    startCommand: "cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT"
+    plan: free
+    buildCommand: "pip install -r backend/requirements.txt && python backend/ml/train.py"
+    startCommand: "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /api/health
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hazardguard-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+
+databases:
+  - name: hazardguard-db
+    plan: free
+    databaseName: hazardguard
+    user: hazardguard_admin
