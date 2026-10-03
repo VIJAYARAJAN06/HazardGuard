@@ -12,7 +12,6 @@ Tests:
 - System health aggregator
 """
 
-import pytest
 import os
 import sys
 
