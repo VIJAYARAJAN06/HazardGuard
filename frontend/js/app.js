@@ -28,6 +28,15 @@ const PAGES = [
 let currentPage = 'dashboard';
 let wsConn = null;
 let activeWebcamStream = null;
+let liveTelemetryHistory = [
+  { gas: 8.0, temp: 24.0, hum: 45.0 },
+  { gas: 8.5, temp: 24.2, hum: 45.0 },
+  { gas: 9.0, temp: 24.5, hum: 45.1 },
+  { gas: 8.8, temp: 24.3, hum: 45.0 },
+  { gas: 9.2, temp: 24.6, hum: 45.2 },
+  { gas: 9.5, temp: 24.8, hum: 45.3 }
+];
+window.navigate = navigate;
 // AUTHENTICATION & ROLE STATE
 let authToken = localStorage.getItem('hazardguard_token') || '';
 let currentUser = null;
@@ -744,7 +753,7 @@ async function renderDashboard(el) {
         recentBody.innerHTML = `<tr><td colspan="5" class="empty-state">No incidents recorded. System nominal.</td></tr>`;
       } else {
         recentBody.innerHTML = recents.slice(0, 5).map(inc => `
-          <tr>
+          <tr onclick="navigateToIncident(${inc.id})" style="cursor:pointer" title="Click to view full incident evidence & lifecycle">
             <td class="cell-mono">${inc.incident_code || '#' + inc.id}</td>
             <td><b>${inc.zone}</b></td>
             <td>${inc.worker_name || 'Unassigned'}</td>
@@ -989,31 +998,67 @@ function renderMonitoring(el) {
     </div>
   `;
 
+  renderTelemetryChart();
   connectLiveWebSocket();
 }
 
+let wsPollTimer = null;
+
 function connectLiveWebSocket() {
   if (wsConn) return;
+  const isProd = window.location.port === '8000' || window.location.origin.includes('render.com') || window.location.origin.includes('railway.app') || window.location.origin.includes('onrender.com');
   const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsHost = (window.location.port === '8000' || window.location.origin.includes('render.com') || window.location.origin.includes('railway.app') || window.location.origin.includes('onrender.com'))
-    ? window.location.host
-    : 'localhost:8000';
-  wsConn = new WebSocket(`${wsProto}//${wsHost}/ws/live`);
+  const wsHost = isProd ? window.location.host : 'localhost:8000';
 
-  wsConn.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      updateMonitoringUI(data);
-    } catch (e) {
-      console.error('Error parsing WS message:', e);
+  try {
+    wsConn = new WebSocket(`${wsProto}//${wsHost}/ws/live`);
+
+    wsConn.onopen = () => {
+      if (wsPollTimer) {
+        clearInterval(wsPollTimer);
+        wsPollTimer = null;
+      }
+    };
+
+    wsConn.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        updateMonitoringUI(data);
+      } catch (e) {
+        console.error('Error parsing WS message:', e);
+      }
+    };
+
+    wsConn.onerror = () => {
+      startFallbackPolling();
+    };
+
+    wsConn.onclose = () => {
+      wsConn = null;
+      startFallbackPolling();
+      setTimeout(() => {
+        if (currentPage === 'monitoring') connectLiveWebSocket();
+      }, 3000);
+    };
+  } catch {
+    startFallbackPolling();
+  }
+}
+
+function startFallbackPolling() {
+  if (wsPollTimer) return;
+  wsPollTimer = setInterval(async () => {
+    if (currentPage !== 'monitoring') {
+      clearInterval(wsPollTimer);
+      wsPollTimer = null;
+      return;
     }
-  };
-
-  wsConn.onclose = () => {
-    setTimeout(() => {
-      if (currentPage === 'monitoring') connectLiveWebSocket();
-    }, 3000);
-  };
+    const zone = document.getElementById('mon-zone-select')?.value || 'Zone 01';
+    const data = await apiFetch(`/api/simulate?zone=${zone}`);
+    if (data && data.reading) {
+      updateMonitoringUI(data);
+    }
+  }, 1000);
 }
 
 function updateMonitoringUI(data) {
@@ -1113,6 +1158,18 @@ function updateMonitoringUI(data) {
     if (td && a.recommended_action) td.textContent = a.recommended_action;
   }
 
+  // Update notification count badge in header & sidebar badge
+  const activeAlerts = (a.severity === 'Critical' || a.severity === 'High') ? 1 : 0;
+  const headerNotif = document.getElementById('header-alert-count');
+  if (headerNotif) {
+    if (data.incident && data.incident.status === 'OPEN') {
+      headerNotif.textContent = '1';
+      headerNotif.style.background = 'var(--sev-critical)';
+    } else if (activeAlerts > 0) {
+      headerNotif.textContent = String(activeAlerts);
+    }
+  }
+
   // 6. Update Rolling Telemetry SVG Chart
   liveTelemetryHistory.push({
     gas: r.gas_level || 0,
@@ -1124,36 +1181,56 @@ function updateMonitoringUI(data) {
 
 function renderTelemetryChart() {
   const container = document.getElementById('live-telemetry-svg');
-  if (!container || liveTelemetryHistory.length < 2) return;
+  if (!container) return;
 
-  const w = container.clientWidth || 400;
-  const h = 120;
+  const w = Math.max(container.clientWidth || 500, 300);
+  const h = 130;
   const n = liveTelemetryHistory.length;
+
+  if (n < 2) return;
 
   const maxGas = 80;
   const maxTemp = 60;
 
   // Build SVG polyline points
   const gasPoints = liveTelemetryHistory.map((d, i) => {
-    const x = (i / (n - 1)) * w;
-    const y = h - ((d.gas / maxGas) * (h - 10));
+    const x = Math.round((i / (n - 1)) * (w - 40)) + 30;
+    const y = Math.round(h - 20 - ((Math.min(d.gas, maxGas) / maxGas) * (h - 35)));
     return `${x},${y}`;
   }).join(' ');
 
   const tempPoints = liveTelemetryHistory.map((d, i) => {
-    const x = (i / (n - 1)) * w;
-    const y = h - ((d.temp / maxTemp) * (h - 10));
+    const x = Math.round((i / (n - 1)) * (w - 40)) + 30;
+    const y = Math.round(h - 20 - ((Math.min(d.temp, maxTemp) / maxTemp) * (h - 35)));
     return `${x},${y}`;
   }).join(' ');
 
   container.innerHTML = `
-    <svg class="chart-svg" viewBox="0 0 ${w} ${h}">
-      <!-- Grid lines -->
-      <line x1="0" y1="${h/2}" x2="${w}" y2="${h/2}" stroke="#f1f5f9" stroke-width="1"/>
-      <line x1="0" y1="${h-1}" x2="${w}" y2="${h-1}" stroke="#e2e8f0" stroke-width="1"/>
+    <svg style="width:100%;height:100%;display:block;overflow:visible" viewBox="0 0 ${w} ${h}">
+      <!-- Horizontal reference lines -->
+      <line x1="30" y1="20" x2="${w-10}" y2="20" stroke="#f1f5f9" stroke-dasharray="3 3" stroke-width="1"/>
+      <line x1="30" y1="${(h-20)/2 + 10}" x2="${w-10}" y2="${(h-20)/2 + 10}" stroke="#f1f5f9" stroke-dasharray="3 3" stroke-width="1"/>
+      <line x1="30" y1="${h-20}" x2="${w-10}" y2="${h-20}" stroke="#cbd5e1" stroke-width="1.5"/>
+
+      <!-- Y Axis Labels -->
+      <text x="5" y="24" fill="#94a3b8" font-size="9" font-family="monospace">HIGH</text>
+      <text x="5" y="${(h-20)/2 + 14}" fill="#94a3b8" font-size="9" font-family="monospace">MID</text>
+      <text x="5" y="${h-18}" fill="#94a3b8" font-size="9" font-family="monospace">0.0</text>
+
       <!-- Polylines -->
-      <polyline points="${tempPoints}" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
-      <polyline points="${gasPoints}" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
+      <polyline points="${tempPoints}" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <polyline points="${gasPoints}" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+      <!-- Current latest values on right -->
+      ${(() => {
+        const last = liveTelemetryHistory[liveTelemetryHistory.length - 1];
+        const lastGasY = Math.round(h - 20 - ((Math.min(last.gas, maxGas) / maxGas) * (h - 35)));
+        const lastTempY = Math.round(h - 20 - ((Math.min(last.temp, maxTemp) / maxTemp) * (h - 35)));
+        return `
+          <circle cx="${w-10}" cy="${lastGasY}" r="4" fill="#ef4444"/>
+          <circle cx="${w-10}" cy="${lastTempY}" r="4" fill="#f59e0b"/>
+        `;
+      })()}
     </svg>
   `;
 }
@@ -1199,7 +1276,10 @@ window.controlScenario = async (action) => {
 
 window.loadScenarioPreset = async (name) => {
   const zone = document.getElementById('mon-zone-select')?.value || 'Zone 01';
-  await apiFetch(`/api/simulate?scenario=${name}&zone=${zone}`);
+  const res = await apiFetch(`/api/simulate?scenario=${name}&zone=${zone}`);
+  if (res && res.reading) {
+    updateMonitoringUI(res);
+  }
 };
 
 window.onZoneSelectChange = async (zone) => {
@@ -1328,8 +1408,18 @@ async function renderIncidents(el) {
       </tr>
     `).join('');
 
+    if (window.pendingSelectIncidentId) {
+      const match = filtered.find(i => i.id === window.pendingSelectIncidentId);
+      if (match) {
+        selected = match;
+        window.pendingSelectIncidentId = null;
+      }
+    }
+
     if (!selected && filtered.length > 0) {
       selectIncidentRow(filtered[0].id);
+    } else if (selected) {
+      renderDetailView();
     }
   }
 
@@ -1337,6 +1427,11 @@ async function renderIncidents(el) {
     selected = incidents.find(i => i.id === id);
     renderTable(document.getElementById('inc-search-input')?.value || '');
     renderDetailView();
+  };
+
+  window.navigateToIncident = (id) => {
+    window.pendingSelectIncidentId = id;
+    navigate('incidents');
   };
 
   window.filterIncidents = (filter, btn) => {
@@ -1409,10 +1504,18 @@ async function renderIncidents(el) {
         </div>
       </div>
 
-      <!-- Directive -->
-      <div style="background:var(--primary-light);border:1px solid var(--primary-border);border-radius:var(--radius-md);padding:12px;margin-bottom:16px">
+      <!-- Directive & Quick Actions -->
+      <div style="background:var(--primary-light);border:1px solid var(--primary-border);border-radius:var(--radius-md);padding:14px;margin-bottom:16px">
         <div style="font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase;margin-bottom:4px">OPERATIONAL DIRECTIVE</div>
-        <div style="font-size:12px;color:var(--text-primary);line-height:1.4">${selected.recommended_action || 'Inspect area and ensure safety.'}</div>
+        <div style="font-size:12px;color:var(--text-primary);line-height:1.4;margin-bottom:10px">${selected.recommended_action || 'Inspect area and ensure safety.'}</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="navigate('ack')" style="font-size:11px">
+            🛡️ Take Lifecycle Action
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="navigate('ai')" style="font-size:11px">
+            🤖 View AI Explanation
+          </button>
+        </div>
       </div>
 
       <!-- Lifecycle Stepper / Transitions -->
