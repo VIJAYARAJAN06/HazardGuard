@@ -22,10 +22,10 @@ from typing import Dict, Any, Optional
 class ScenarioPlayer:
     def __init__(self):
         self.lock = threading.Lock()
-        self.scenario_name = "normal"
-        self.elapsed_seconds = 0
-        self.max_duration = 120
-        self.is_running = False
+        self.scenario_name = "timeline"
+        self.elapsed_seconds = 0.0
+        self.max_duration = 120.0
+        self.is_running = True
         self.is_paused = False
         self.zone = "Zone 01"
         self.worker_id = "W-101"
@@ -34,7 +34,7 @@ class ScenarioPlayer:
     def set_scenario(self, name: str, zone: str = "Zone 01", worker_id: str = "W-101"):
         with self.lock:
             self.scenario_name = name.lower()
-            self.elapsed_seconds = 0
+            self.elapsed_seconds = 0.0
             self.zone = zone
             self.worker_id = worker_id
             self.is_running = True
@@ -52,7 +52,7 @@ class ScenarioPlayer:
 
     def restart(self):
         with self.lock:
-            self.elapsed_seconds = 0
+            self.elapsed_seconds = 0.0
             self.is_paused = False
             self.is_running = True
             self.last_update = datetime.utcnow()
@@ -61,7 +61,7 @@ class ScenarioPlayer:
         with self.lock:
             self.is_running = False
             self.is_paused = False
-            self.elapsed_seconds = 0
+            self.elapsed_seconds = 0.0
 
     def tick(self, step_sec: float = 1.0) -> Dict[str, Any]:
         """Advance time by step_sec and compute deterministic readings."""

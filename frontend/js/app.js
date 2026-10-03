@@ -1,45 +1,94 @@
 /* ==============================================================================
-   HAZARDGUARD — Master Frontend Application Logic
-   Software-First Industrial Hazard-Zone Personnel Monitoring System
+   HAZARDGUARD — Enterprise Master Frontend Application Controller
+   Modern Minimal White Theme · Pure Modular Architecture · Real Backend Data
    
-   STRICT INFORMATION ORDER (LOCKED):
-   1. Dashboard            (System overview, active workers, zone health, incidents)
-   2. Live Monitoring      (Primary ops, video webcam / fallback, scenario engine, telemetry, expected vs actual)
-   3. Incidents & Evidence (Complete incident history, filters, audit trail, evidence breakdown)
-   4. AI Explanation       (Operational safety advisory, correlated evidence analysis)
-   5. Acknowledgement      (Supervisor action portal: Open -> Acknowledged -> Investigating -> Resolved -> Closed)
-   6. Profile / Settings   (4 primary profile slots, worker/zone assignments, sensor thresholds)
+   STRICT INFORMATION ORDER (LOCKED & PRESERVED):
+   1. Dashboard            (KPIs, Zone Overview, Recent Incidents, Severity Donut, Trends, Workers)
+   2. Live Monitoring      (Live Webcam / Honest CV, Telemetry Grid, Multi-line Graph, Expected vs Actual, Evidence, ML Risk, 120s Timeline Player)
+   3. Incidents & Evidence (Enterprise Incident Data Table, Filters, Master-Detail Audit Drawer, Telemetry Snapshot, Evidence Tree)
+   4. AI Explanation       (Structured Incident Safety Report, Root-Cause Analysis, Transparent Mode Disclosure)
+   5. Acknowledgement      (Supervisor Operational Workspace, 5-Stage Lifecycle Stepper, Mitigation Notes)
+   6. Profile / Settings   (4 Primary Profile Slots, Real Sensor Masks, Worker/Zone Assignments, Thresholds)
    ============================================================================== */
 
 const API = window.location.port === '8000' || window.location.pathname.startsWith('/api') || window.location.origin.includes('render.com') || window.location.origin.includes('railway.app') || window.location.origin.includes('onrender.com')
   ? window.location.origin
   : 'http://localhost:8000';
 
-// STRICT LOCKED NAVIGATION ORDER
+// EXACT LOCKED 6-PAGE NAVIGATION ORDER
 const PAGES = [
-  { id: 'dashboard',   label: 'Dashboard',            icon: '📊' },
-  { id: 'monitoring',  label: 'Live Monitoring',       icon: '📡' },
-  { id: 'incidents',   label: 'Incidents & Evidence', icon: '📋' },
-  { id: 'ai',          label: 'AI Explanation',       icon: '🤖' },
-  { id: 'ack',         label: 'Acknowledgement',      icon: '🛡️' },
-  { id: 'settings',    label: 'Profile / Settings',   icon: '⚙️' },
+  { id: 'dashboard',   label: 'Dashboard',            icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>` },
+  { id: 'monitoring',  label: 'Live Monitoring',       icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"/></svg>` },
+  { id: 'incidents',   label: 'Incidents & Evidence', icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>` },
+  { id: 'ai',          label: 'AI Explanation',       icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>` },
+  { id: 'ack',         label: 'Acknowledgement',      icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>` },
+  { id: 'settings',    label: 'Profile / Settings',   icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>` },
 ];
 
 let currentPage = 'dashboard';
 let wsConn = null;
 let activeWebcamStream = null;
+let liveTelemetryHistory = []; // rolling 30 seconds for live SVG charts
 
-// Navigation builder
+// ── SHARED UTILITIES & FETCH WRAPPER ─────────────────────────────────────────
+
+async function apiFetch(path, options = {}) {
+  try {
+    const res = await fetch(`${API}${path}`, options);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn(`API Error [${path}]:`, err);
+    return null;
+  }
+}
+
+function fdt(isoStr) {
+  if (!isoStr) return '—';
+  try {
+    const d = new Date(isoStr);
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' +
+           d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  } catch {
+    return isoStr;
+  }
+}
+
+function ft(isoStr) {
+  if (!isoStr) return '—';
+  try {
+    return new Date(isoStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  } catch {
+    return isoStr;
+  }
+}
+
+function badgeHtml(severity) {
+  const s = severity || 'Normal';
+  const c = {
+    Critical: 'badge-critical',
+    High:     'badge-high',
+    Warning:  'badge-warning',
+    Normal:   'badge-normal'
+  }[s] || 'badge-neutral';
+  return `<span class="badge ${c}">● ${s}</span>`;
+}
+
+// ── NAVIGATION CONTROLLER ───────────────────────────────────────────────────
+
 function buildNav() {
-  document.getElementById('nav').innerHTML = PAGES.map(p => `
-    <button onclick="navigate('${p.id}')" class="${p.id === currentPage ? 'active' : ''}">
-      <span class="icon">${p.icon}</span>
+  const navEl = document.getElementById('nav');
+  if (!navEl) return;
+  navEl.innerHTML = PAGES.map(p => `
+    <button type="button" onclick="navigate('${p.id}')" class="${p.id === currentPage ? 'active' : ''}">
+      <span class="nav-icon">${p.icon}</span>
       <span>${p.label}</span>
-    </button>`).join('');
+      ${p.id === 'incidents' ? `<span class="nav-badge" id="nav-inc-badge">0</span>` : ''}
+    </button>
+  `).join('');
 }
 
 function navigate(id) {
-  // Clean up existing live listeners if leaving monitoring
   if (wsConn && id !== 'monitoring') {
     wsConn.close();
     wsConn = null;
@@ -50,14 +99,20 @@ function navigate(id) {
   }
 
   currentPage = id;
+  const p = PAGES.find(x => x.id === id);
+  const titleEl = document.getElementById('header-page-title');
+  if (titleEl && p) titleEl.textContent = p.label;
+
   buildNav();
-  renderPage(id);
+  renderCurrentPage();
 }
 
-function renderPage(id) {
-  const el = document.getElementById('page-content');
-  el.innerHTML = '';
-  const routes = {
+function renderCurrentPage() {
+  const container = document.getElementById('page-content');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const views = {
     dashboard: renderDashboard,
     monitoring: renderMonitoring,
     incidents: renderIncidents,
@@ -65,392 +120,627 @@ function renderPage(id) {
     ack: renderAcknowledgement,
     settings: renderSettings
   };
-  (routes[id] || renderDashboard)(el);
+
+  (views[currentPage] || renderDashboard)(container);
 }
 
-// Global modal helpers
-window.confirmReset = () => { document.getElementById('reset-modal').style.display = 'flex'; };
+// ── GLOBAL SEARCH & CLOCK ───────────────────────────────────────────────────
+
+function initClock() {
+  setInterval(() => {
+    const el = document.getElementById('live-clock');
+    if (el) {
+      const now = new Date();
+      el.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+  }, 1000);
+}
+
+window.onGlobalSearch = (query) => {
+  const q = query.trim().toLowerCase();
+  if (!q) return;
+  // If user searches on another page, navigate to incidents search
+  if (currentPage !== 'incidents') {
+    navigate('incidents');
+    setTimeout(() => {
+      const filterInput = document.getElementById('inc-search-input');
+      if (filterInput) {
+        filterInput.value = q;
+        filterInput.dispatchEvent(new Event('input'));
+      }
+    }, 150);
+  }
+};
+
+window.confirmReset = () => {
+  const modal = document.getElementById('reset-modal');
+  if (modal) modal.style.display = 'flex';
+};
+
 window.doReset = async () => {
-  document.getElementById('reset-modal').style.display = 'none';
+  const modal = document.getElementById('reset-modal');
+  if (modal) modal.style.display = 'none';
   await apiFetch('/api/reset', { method: 'POST' });
   navigate('dashboard');
 };
 
-// Formatting helpers
-function badge(l) {
-  const c = {
-    Critical: 'badge-critical',
-    High:     'badge-high',
-    Warning:  'badge-warning',
-    Normal:   'badge-normal'
-  }[l] || 'badge-neutral';
-  return `<span class="badge ${c}">${l || 'Nominal'}</span>`;
-}
-
-function sc(l) {
-  return {
-    Critical: 'sev-critical',
-    High:     'sev-high',
-    Warning:  'sev-warning',
-    Normal:   'sev-normal'
-  }[l] || '';
-}
-
-function col(l) {
-  return {
-    Critical: '#ef4444',
-    High:     '#f97316',
-    Warning:  '#f59e0b',
-    Normal:   '#10b981'
-  }[l] || '#64748b';
-}
-
-function ft(ts) {
-  try { return new Date(ts).toLocaleTimeString(); } catch { return ts || ''; }
-}
-
-function fdt(ts) {
-  try { return new Date(ts).toLocaleString(); } catch { return ts || ''; }
-}
-
-async function apiFetch(path, opts) {
-  try {
-    const r = await fetch(API + path, opts);
-    if (!r.ok) return null;
-    return await r.json();
-  } catch {
-    return null;
-  }
-}
-
-
 // ══════════════════════════════════════════════════════════════════════════════
-// 1. DASHBOARD (Locked Position 1)
+// 1. DASHBOARD — (LOCKED POSITION 1)
 // ══════════════════════════════════════════════════════════════════════════════
 async function renderDashboard(el) {
   el.innerHTML = `
-    <div class="header-banner">
-      <div>
-        <div class="page-title">Hazard Operations Dashboard</div>
-        <div class="page-sub">Real-time status overview, personnel tracking, and active incident telemetry</div>
+    <!-- Top Header Overview -->
+    <div class="page-header">
+      <div class="page-title-wrap">
+        <h1 class="page-title">Safety Operations Dashboard</h1>
+        <div class="page-sub">Real-time status overview of active personnel, hazard zones, and system telemetry</div>
       </div>
       <div style="display:flex;gap:10px">
-        <button class="btn btn-primary btn-sm" onclick="navigate('monitoring')">▶ Open Live Monitoring</button>
+        <button class="btn btn-secondary" onclick="navigate('incidents')">View All Incidents</button>
+        <button class="btn btn-primary" onclick="navigate('monitoring')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Open Live Monitoring
+        </button>
       </div>
     </div>
 
-    <!-- Live Severity KPIs -->
-    <div class="grid4" id="d-kpis">
-      <div class="kpi kpi-critical"><div class="num" id="kpi-Critical" style="color:var(--sev-critical)">–</div><div class="lbl">Critical Threats</div></div>
-      <div class="kpi kpi-high"><div class="num" id="kpi-High" style="color:var(--sev-high)">–</div><div class="lbl">High Hazards</div></div>
-      <div class="kpi kpi-warning"><div class="num" id="kpi-Warning" style="color:var(--sev-warning)">–</div><div class="lbl">Warnings Active</div></div>
-      <div class="kpi kpi-normal"><div class="num" id="kpi-Normal" style="color:var(--sev-normal)">–</div><div class="lbl">Normal Baseline</div></div>
+    <!-- 1. TOP KPI ROW -->
+    <div class="kpi-grid">
+      <!-- Active Workers -->
+      <div class="kpi-card">
+        <div class="kpi-top-row">
+          <span class="kpi-label">Active Workers</span>
+          <div class="kpi-icon-wrapper blue">👥</div>
+        </div>
+        <div class="kpi-value-row">
+          <span class="kpi-value" id="kpi-active-workers">—</span>
+          <span class="kpi-delta good" id="kpi-worker-ratio">100% online</span>
+        </div>
+        <div class="kpi-footnote">Real-time biometric & telemetry link</div>
+      </div>
+
+      <!-- Monitored Zones -->
+      <div class="kpi-card">
+        <div class="kpi-top-row">
+          <span class="kpi-label">Monitored Zones</span>
+          <div class="kpi-icon-wrapper green">🏭</div>
+        </div>
+        <div class="kpi-value-row">
+          <span class="kpi-value" id="kpi-monitored-zones">4</span>
+          <span class="kpi-delta good">4 / 4 Active</span>
+        </div>
+        <div class="kpi-footnote">Primary industrial hazard quadrants</div>
+      </div>
+
+      <!-- High / Critical Threats -->
+      <div class="kpi-card">
+        <div class="kpi-top-row">
+          <span class="kpi-label">High / Critical Threats</span>
+          <div class="kpi-icon-wrapper red">⚠️</div>
+        </div>
+        <div class="kpi-value-row">
+          <span class="kpi-value" id="kpi-critical-incidents">—</span>
+          <span class="kpi-delta warn" id="kpi-threat-tag">0 Active</span>
+        </div>
+        <div class="kpi-footnote">Requires supervisor intervention</div>
+      </div>
+
+      <!-- System Health -->
+      <div class="kpi-card">
+        <div class="kpi-top-row">
+          <span class="kpi-label">System Health</span>
+          <div class="kpi-icon-wrapper blue">🛡️</div>
+        </div>
+        <div class="kpi-value-row">
+          <span class="kpi-value" style="font-size:20px;color:#10b981">OPERATIONAL</span>
+        </div>
+        <div class="kpi-footnote" id="kpi-engine-tag">Deterministic + ML Model</div>
+      </div>
     </div>
 
-    <!-- Monitored Zones & Active Workers -->
-    <div class="grid2" style="margin-top:18px">
+    <!-- 2. ZONE OVERVIEW (4 PRIMARY ZONES) -->
+    <div class="card" style="margin-bottom:24px">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Hazard Zone Status & Personnel Distribution</div>
+          <div class="card-subtitle">Active surveillance perimeters with assigned profiles and real-time threat ratings</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="navigate('settings')">Configure Profiles →</button>
+      </div>
+      <div class="zone-grid" id="dash-zone-cards">Loading zones…</div>
+    </div>
+
+    <!-- 3. MIDDLE SECTION: INCIDENT TRENDS & SEVERITY DONUT -->
+    <div class="grid-split-7-5" style="margin-bottom:24px">
+      <!-- Zone Comparison Bar Chart -->
       <div class="card">
-        <h2>
-          <span>Monitored Hazard Zones (4)</span>
-          <span style="font-size:11px;color:var(--text-dim)">PERSISTENT SQLITE REPOSITORY</span>
-        </h2>
-        <div id="d-zones" style="display:flex;flex-direction:column;gap:8px">Loading zones…</div>
+        <div class="card-header">
+          <div>
+            <div class="card-title">Zone Personnel & Alert Distribution</div>
+            <div class="card-subtitle">Comparative allocation of active personnel across monitored industrial zones</div>
+          </div>
+          <span class="badge badge-neutral">4 Zones Monitored</span>
+        </div>
+        <div id="dash-bar-chart-container" style="height:190px"></div>
       </div>
 
+      <!-- Severity Donut & ML Risk Score -->
       <div class="card">
-        <h2>
-          <span>Assigned Personnel</span>
-          <span id="d-worker-count" style="font-size:11px;color:var(--text-dim)"></span>
-        </h2>
-        <div id="d-workers" style="display:flex;flex-direction:column;gap:8px">Loading personnel…</div>
+        <div class="card-header">
+          <div>
+            <div class="card-title">Incident Severity Distribution</div>
+            <div class="card-subtitle">Recorded events by operational severity</div>
+          </div>
+          <span class="badge badge-neutral" id="dash-total-inc-badge">0 Events</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-around;height:190px" id="dash-donut-container">
+          Loading chart…
+        </div>
       </div>
     </div>
 
-    <!-- Recent Incidents -->
-    <div class="card" style="margin-top:18px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <h2>Recent Critical & Warning Events</h2>
-        <button class="btn btn-outline btn-sm" onclick="navigate('incidents')">View All Incidents →</button>
+    <!-- 4. BOTTOM SECTION: RECENT INCIDENTS & WORKER OVERVIEW -->
+    <div class="grid-2">
+      <!-- Recent Incidents Table -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Recent Critical & Warning Events</div>
+            <div class="card-subtitle">Live events logged in SQLite WAL database</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="navigate('incidents')">View All →</button>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Zone</th>
+                <th>Worker</th>
+                <th>Severity</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="dash-recent-table-body">
+              <tr><td colspan="5" class="empty-state">Loading incidents…</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-      <div id="d-recent">Loading recent incidents…</div>
+
+      <!-- Worker Overview Table -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Personnel Telemetry Status</div>
+            <div class="card-subtitle">Active monitored technicians and assigned zones</div>
+          </div>
+          <span class="badge badge-neutral" id="dash-worker-count-badge">5 Registered</span>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Worker</th>
+                <th>Zone</th>
+                <th>Connection</th>
+                <th>Posture</th>
+                <th>Movement</th>
+              </tr>
+            </thead>
+            <tbody id="dash-worker-table-body">
+              <tr><td colspan="5" class="empty-state">Loading workers…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   `;
 
-  async function loadData() {
-    const [dash, workers, status] = await Promise.all([
+  // Fetch and hydrate real backend data
+  async function hydrateDashboard() {
+    const [dash, workersData, statusData] = await Promise.all([
       apiFetch('/api/dashboard'),
       apiFetch('/api/workers'),
       apiFetch('/api/status')
     ]);
 
-    if (!dash) {
-      document.getElementById('d-recent').innerHTML = `
-        <div class="empty">
-          <div class="ico">⚠️</div>
-          <p>HAZARDGUARD Backend unreachable at <b>${API}</b>.<br>Launch FastAPI server via <code>py -3.14 main.py</code> in backend directory.</p>
-        </div>`;
-      return;
-    }
+    if (!dash) return;
 
-    // Update KPIs
+    // 1. Update KPIs
+    const totalWorkers = dash.total_workers || 0;
+    const activeWorkers = dash.active_workers || 0;
     const sum = dash.summary || {};
-    ['Critical', 'High', 'Warning', 'Normal'].forEach(s => {
-      const elNum = document.getElementById('kpi-' + s);
-      if (elNum) elNum.textContent = sum[s] || 0;
-    });
+    const criticals = (sum.Critical || 0) + (sum.High || 0);
 
-    // Update Zones
-    const zonesEl = document.getElementById('d-zones');
-    if (zonesEl) {
-      zonesEl.innerHTML = (dash.zones || []).map(z => `
-        <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
-          <div>
-            <div style="font-weight:700;font-size:13px">${z.name}</div>
-            <div style="font-size:11px;color:var(--text-dim)">Hazard: ${z.hazard_type} · Profile: ${z.active_profile}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:12px;color:var(--text-muted)">👥 ${z.personnel} Assigned</span>
-            ${badge(z.status)}
-          </div>
-        </div>`).join('');
+    const elW = document.getElementById('kpi-active-workers');
+    if (elW) elW.textContent = `${activeWorkers} / ${totalWorkers}`;
+
+    const elWratio = document.getElementById('kpi-worker-ratio');
+    if (elWratio) elWratio.textContent = `${totalWorkers > 0 ? Math.round((activeWorkers/totalWorkers)*100) : 0}% Online`;
+
+    const elCrit = document.getElementById('kpi-critical-incidents');
+    if (elCrit) elCrit.textContent = criticals;
+
+    const elCritTag = document.getElementById('kpi-threat-tag');
+    if (elCritTag) {
+      elCritTag.textContent = criticals > 0 ? `${criticals} Alert(s)` : '0 Active';
+      elCritTag.className = criticals > 0 ? 'kpi-delta warn' : 'kpi-delta good';
     }
 
-    // Update Workers
-    const workersEl = document.getElementById('d-workers');
-    const workerCountEl = document.getElementById('d-worker-count');
-    if (workersEl && workers?.workers) {
-      workerCountEl.textContent = `${workers.workers.length} Personnel Registered`;
-      workersEl.innerHTML = workers.workers.map(w => `
-        <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:9px 12px;display:flex;align-items:center;justify-content:space-between">
-          <div>
-            <span style="font-weight:700;font-size:12px;color:#60a5fa">${w.id}</span>
-            <span style="font-weight:600;font-size:13px;margin-left:6px">${w.name}</span>
-            <div style="font-size:11px;color:var(--text-dim)">${w.role} · ${w.zone_id || 'Unassigned'}</div>
+    const headerNotif = document.getElementById('header-alert-count');
+    if (headerNotif) headerNotif.textContent = criticals;
+
+    // 2. Render Zone Cards
+    const zonesContainer = document.getElementById('dash-zone-cards');
+    if (zonesContainer && dash.zones) {
+      zonesContainer.innerHTML = dash.zones.map(z => `
+        <div class="zone-card" onclick="navigate('monitoring')">
+          <div class="zone-header">
+            <span class="zone-id">${z.id}</span>
+            ${badgeHtml(z.status)}
+          </div>
+          <div class="zone-title">${z.name}</div>
+          <div class="zone-hazard">
+            <span>⚠️</span> ${z.hazard_type}
+          </div>
+          <div class="zone-footer">
+            <span class="zone-personnel">👥 ${z.personnel} Assigned</span>
+            <span style="color:var(--text-muted);font-size:10px">${z.active_profile}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // 3. Render Zone Comparison Bar Chart (SVG)
+    const barChartEl = document.getElementById('dash-bar-chart-container');
+    if (barChartEl && dash.zones) {
+      const zones = dash.zones;
+      const maxPersonnel = Math.max(...zones.map(z => z.personnel), 3);
+      barChartEl.innerHTML = `
+        <div style="display:flex;align-items:flex-end;justify-content:space-around;height:140px;padding-top:20px;border-bottom:1px solid var(--border-subtle)">
+          ${zones.map(z => {
+            const h = Math.round((z.personnel / maxPersonnel) * 110) + 12;
+            const barColor = z.status === 'Critical' ? 'var(--sev-critical)' : z.status === 'Warning' ? 'var(--sev-warning)' : 'var(--primary)';
+            return `
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:60px">
+                <span style="font-size:11px;font-weight:700;color:var(--text-secondary)">${z.personnel} wkr</span>
+                <div style="width:28px;height:${h}px;background:${barColor};border-radius:4px 4px 0 0;transition:height 0.3s ease"></div>
+                <span style="font-size:11px;font-weight:600;color:var(--text-muted);white-space:nowrap">${z.id}</span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        <div style="display:flex;justify-content:center;gap:18px;margin-top:10px;font-size:11px;color:var(--text-muted)">
+          <span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;background:var(--primary);border-radius:2px"></span> Assigned Workers</span>
+          <span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;background:var(--sev-normal);border-radius:2px"></span> Baseline Normal</span>
+        </div>
+      `;
+    }
+
+    // 4. Render Severity Donut Chart (SVG)
+    const donutEl = document.getElementById('dash-donut-container');
+    if (donutEl) {
+      const n = sum.Normal || 0;
+      const w = sum.Warning || 0;
+      const h = sum.High || 0;
+      const c = sum.Critical || 0;
+      const total = n + w + h + c;
+
+      const totalBadge = document.getElementById('dash-total-inc-badge');
+      if (totalBadge) totalBadge.textContent = `${total} Events`;
+
+      // SVG Donut calculation
+      const r = 40;
+      const cLength = 2 * Math.PI * r;
+      const getOffset = (val) => total > 0 ? (val / total) * cLength : 0;
+
+      const pN = getOffset(n);
+      const pW = getOffset(w);
+      const pH = getOffset(h);
+      const pC = getOffset(c);
+
+      donutEl.innerHTML = `
+        <div style="position:relative;width:110px;height:110px">
+          <svg width="110" height="110" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="${r}" fill="none" stroke="#f1f5f9" stroke-width="14"/>
+            <!-- Normal -->
+            <circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--sev-normal)" stroke-width="14"
+              stroke-dasharray="${pN} ${cLength}" stroke-dashoffset="0" transform="rotate(-90 50 50)"/>
+            <!-- Warning -->
+            <circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--sev-warning)" stroke-width="14"
+              stroke-dasharray="${pW} ${cLength}" stroke-dashoffset="${-pN}" transform="rotate(-90 50 50)"/>
+            <!-- High -->
+            <circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--sev-high)" stroke-width="14"
+              stroke-dasharray="${pH} ${cLength}" stroke-dashoffset="${-(pN+pW)}" transform="rotate(-90 50 50)"/>
+            <!-- Critical -->
+            <circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--sev-critical)" stroke-width="14"
+              stroke-dasharray="${pC} ${cLength}" stroke-dashoffset="${-(pN+pW+pH)}" transform="rotate(-90 50 50)"/>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <span style="font-size:18px;font-weight:800;color:var(--text-primary)">${total}</span>
+            <span style="font-size:9px;color:var(--text-muted);font-weight:700">EVENTS</span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:11px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:10px;height:10px;border-radius:2px;background:var(--sev-normal)"></span>
+            <span style="color:var(--text-secondary);width:60px">Normal:</span>
+            <span style="font-weight:700">${n}</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:10px;padding:2px 8px;border-radius:4px;background:${w.connection_status === 'ONLINE' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'};color:${w.connection_status === 'ONLINE' ? '#34d399' : '#f87171'}">${w.connection_status}</span>
-            <span style="font-size:11px;color:var(--text-muted)">${w.current_posture}</span>
+            <span style="width:10px;height:10px;border-radius:2px;background:var(--sev-warning)"></span>
+            <span style="color:var(--text-secondary);width:60px">Warning:</span>
+            <span style="font-weight:700">${w}</span>
           </div>
-        </div>`).join('');
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:10px;height:10px;border-radius:2px;background:var(--sev-high)"></span>
+            <span style="color:var(--text-secondary);width:60px">High:</span>
+            <span style="font-weight:700">${h}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:10px;height:10px;border-radius:2px;background:var(--sev-critical)"></span>
+            <span style="color:var(--text-secondary);width:60px">Critical:</span>
+            <span style="font-weight:700">${c}</span>
+          </div>
+        </div>
+      `;
     }
 
-    // Update Recent Incidents
-    const recEl = document.getElementById('d-recent');
-    const recent = dash.recent_incidents || [];
-    if (recEl) {
-      if (recent.length === 0) {
-        recEl.innerHTML = `
-          <div class="empty" style="padding:24px">
-            <div class="ico">🛡️</div>
-            <p>No active incidents recorded. System in nominal state.<br>Navigate to <b>Live Monitoring</b> to run controlled scenarios.</p>
-          </div>`;
+    // 5. Render Recent Incidents Table
+    const recentBody = document.getElementById('dash-recent-table-body');
+    if (recentBody) {
+      const recents = dash.recent_incidents || [];
+      if (recents.length === 0) {
+        recentBody.innerHTML = `<tr><td colspan="5" class="empty-state">No incidents recorded. System nominal.</td></tr>`;
       } else {
-        recEl.innerHTML = recent.slice(0, 5).map(inc => `
-          <div class="card ${sc(inc.severity)}" style="padding:12px 16px;margin-bottom:8px">
-            <div style="display:flex;align-items:center;gap:12px">
-              ${badge(inc.severity)}
-              <span style="font-weight:700;font-size:13px">${inc.incident_code || '#' + inc.id}</span>
-              <span style="font-weight:600;font-size:13px">${inc.incident_type}</span>
-              <span style="color:var(--text-dim);font-size:12px">${inc.zone} · Worker: ${inc.worker_name || 'N/A'}</span>
-              <span style="margin-left:auto;font-size:11px;color:var(--text-dim)">${fdt(inc.created_at || inc.timestamp)}</span>
-              <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.08)">${inc.status}</span>
-            </div>
-          </div>`).join('');
+        recentBody.innerHTML = recents.slice(0, 5).map(inc => `
+          <tr>
+            <td class="cell-mono">${inc.incident_code || '#' + inc.id}</td>
+            <td><b>${inc.zone}</b></td>
+            <td>${inc.worker_name || 'Unassigned'}</td>
+            <td>${badgeHtml(inc.severity)}</td>
+            <td><span class="badge badge-neutral">${inc.status}</span></td>
+          </tr>
+        `).join('');
       }
+    }
+
+    // 6. Render Worker Table
+    const workerBody = document.getElementById('dash-worker-table-body');
+    if (workerBody && workersData?.workers) {
+      workerBody.innerHTML = workersData.workers.map(w => `
+        <tr>
+          <td>
+            <div style="font-weight:600;color:var(--text-primary)">${w.name}</div>
+            <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono)">${w.id} · ${w.role}</div>
+          </td>
+          <td><b>${w.zone_id || 'Unassigned'}</b></td>
+          <td>
+            <span class="badge ${w.connection_status === 'ONLINE' ? 'badge-normal' : 'badge-neutral'}">
+              ${w.connection_status}
+            </span>
+          </td>
+          <td><span style="font-size:11px;font-weight:600">${w.current_posture}</span></td>
+          <td><span style="font-size:11px;color:var(--text-secondary)">${w.current_movement}</span></td>
+        </tr>
+      `).join('');
     }
   }
 
-  loadData();
-  const poll = setInterval(() => {
-    if (currentPage === 'dashboard') loadData();
-    else clearInterval(poll);
+  hydrateDashboard();
+  const timer = setInterval(() => {
+    if (currentPage === 'dashboard') hydrateDashboard();
+    else clearInterval(timer);
   }, 4000);
 }
 
-
 // ══════════════════════════════════════════════════════════════════════════════
-// 2. LIVE MONITORING (Locked Position 2)
+// 2. LIVE MONITORING — (LOCKED POSITION 2)
 // ══════════════════════════════════════════════════════════════════════════════
 function renderMonitoring(el) {
-  let selectedZone = 'Zone 01';
-  let isWebcamActive = false;
-
   el.innerHTML = `
-    <div class="header-banner">
-      <div>
-        <div class="page-title">Live Operational Monitoring</div>
-        <div class="page-sub">Telemetry surveillance, real webcam integration, expected-state verification, and scenario simulation</div>
+    <!-- Top Header -->
+    <div class="page-header">
+      <div class="page-title-wrap">
+        <h1 class="page-title">Live Operational Monitoring</h1>
+        <div class="page-sub">Telemetry surveillance, real webcam integration, expected-state verification, and scenario player</div>
       </div>
-      <!-- Scenario Timeline Controls -->
-      <div style="display:flex;align-items:center;gap:10px;background:var(--bg-surface);padding:8px 14px;border-radius:var(--radius-md);border:1px solid var(--border-subtle)">
-        <span style="font-size:11px;font-weight:700;color:var(--text-dim)">TIMELINE:</span>
-        <span id="sc-timer" style="font-family:monospace;font-size:14px;font-weight:700;color:#60a5fa">00:00</span>
-        <button class="btn btn-outline btn-sm" onclick="controlScenario('restart')" title="Restart Timeline">⏮ Restart</button>
-        <button id="sc-pause-btn" class="btn btn-outline btn-sm" onclick="controlScenario('toggle-pause')">⏸ Pause</button>
-        <div style="border-left:1px solid var(--border-subtle);height:20px;margin:0 4px"></div>
-        <span style="font-size:11px;font-weight:700;color:var(--text-dim)">PRESETS:</span>
-        <button class="btn btn-sm btn-primary" onclick="loadScenarioPreset('timeline')" style="margin-left:4px">
-          ▶ 120s TIMELINE
-        </button>
-        ${['normal', 'warning', 'high', 'critical'].map(s => `
-          <button class="btn btn-sm btn-outline" onclick="loadScenarioPreset('${s}')" style="border-color:${col(s.charAt(0).toUpperCase() + s.slice(1))};color:${col(s.charAt(0).toUpperCase() + s.slice(1))}">
-            ${s.toUpperCase()}
-          </button>`).join('')}
-      </div>
-    </div>
-
-    <!-- Active Stage Banner -->
-    <div id="stage-banner" style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 16px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between">
+      <!-- Mode Badge -->
       <div style="display:flex;align-items:center;gap:10px">
-        <span class="pulse-dot"></span>
-        <span style="font-size:12px;font-weight:700;color:var(--text-dim)">CURRENT SIMULATION STAGE:</span>
-        <span id="sc-stage" style="font-size:13px;font-weight:700;color:#fff">NORMAL: Routine Baseline Surveillance</span>
-      </div>
-      <div id="ml-badge-container">
-        <span class="badge badge-normal">ML RISK: 4.2% (STABLE BASELINE)</span>
+        <span class="badge badge-blue" id="mon-ml-badge">ML RISK: 4.2% (STEADY)</span>
       </div>
     </div>
 
-    <!-- Operational View (2 Columns) -->
-    <div class="grid2">
-      <!-- LEFT COLUMN: Sensors & Expected State -->
+    <!-- Scenario Timeline Controller Bar -->
+    <div class="timeline-control-bar">
+      <div class="timer-readout">
+        <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase">TIMELINE:</span>
+        <span class="timer-digits" id="sc-timer">00:00</span>
+        <span class="stage-pill" id="sc-stage">NORMAL: Baseline Surveillance (00:00 - 00:30)</span>
+      </div>
+
+      <!-- Controls -->
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="controlScenario('restart')" title="Restart Timeline">⏮ Restart</button>
+        <button class="btn btn-secondary btn-sm" id="sc-pause-btn" onclick="controlScenario('toggle-pause')">⏸ Pause</button>
+        <div style="border-left:1px solid var(--border-medium);height:20px;margin:0 4px"></div>
+        <span style="font-size:11px;font-weight:700;color:var(--text-muted)">PRESETS:</span>
+        <button class="btn btn-primary btn-sm" onclick="loadScenarioPreset('timeline')">▶ 120s TIMELINE</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadScenarioPreset('normal')">Normal</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadScenarioPreset('warning')">Warning</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadScenarioPreset('high')">High</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadScenarioPreset('critical')">Critical</button>
+      </div>
+    </div>
+
+    <!-- MAIN TWO-COLUMN SPLIT (7:5) -->
+    <div class="grid-split-7-5">
+      <!-- LEFT COLUMN: Sensors, Expected vs Actual, Multi-line Telemetry Chart -->
       <div>
-        <!-- Target Selection -->
-        <div class="card">
-          <h2>Surveillance Target & Profile</h2>
-          <div class="grid2">
+        <!-- Target Selector & Active Worker -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-header">
+            <div class="card-title">Surveillance Target & Profile</div>
+            <span class="badge badge-neutral" id="mon-profile-tag">Profile: Confined Space Entry</span>
+          </div>
+          <div class="grid-2">
             <div>
-              <label class="fl">Monitored Zone</label>
-              <select id="mon-zone-select" onchange="onZoneChange(this.value)">
-                ${['Zone 01', 'Zone 02', 'Zone 03', 'Zone 04'].map(z => `<option value="${z}">${z}</option>`).join('')}
+              <label class="form-label">Monitored Zone</label>
+              <select class="form-select" id="mon-zone-select" onchange="onZoneSelectChange(this.value)">
+                <option value="Zone 01" selected>Zone 01 - Confined Space Tank</option>
+                <option value="Zone 02">Zone 02 - Chemical Processing Area</option>
+                <option value="Zone 03">Zone 03 - High Temp Furnace Room</option>
+                <option value="Zone 04">Zone 04 - High Voltage Switchyard</option>
               </select>
             </div>
             <div>
-              <label class="fl">Assigned Personnel</label>
-              <div id="mon-worker-tag" style="padding:8px 12px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);font-size:13px;font-weight:600">
-                Arun Kumar (W-101)
+              <label class="form-label">Assigned Personnel</label>
+              <div id="mon-worker-tag" style="padding:8px 12px;background:var(--bg-subtle);border:1px solid var(--border-subtle);border-radius:var(--radius-md);font-size:12px;font-weight:600">
+                Arun Kumar (W-101) · Senior Inspection Tech
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Live Telemetry Readouts -->
-        <div class="card">
-          <h2>Live Sensor Telemetry</h2>
-          <div class="grid3" style="margin-bottom:12px">
-            <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:10px;text-align:center">
-              <div style="font-size:10px;color:var(--text-dim);font-weight:700">GAS SENSOR (MQ)</div>
-              <div id="tel-gas" style="font-size:22px;font-weight:800;color:var(--text-main);margin:4px 0">8.0%</div>
-              <div id="tel-gas-trend" style="font-size:10px;color:#34d399">STEADY (ACTIVE)</div>
+        <!-- 4-Sensor Telemetry Readouts -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-header">
+            <div class="card-title">Live Sensor Telemetry Grid</div>
+            <span class="badge badge-normal" id="mon-sensor-status">4 Active Sensors</span>
+          </div>
+          <div class="grid-4" style="margin-bottom:16px">
+            <!-- Gas -->
+            <div class="telemetry-tile">
+              <span class="tl-label">Gas Concentration</span>
+              <span class="tl-val" id="tl-gas">8.0%</span>
+              <span class="tl-status" id="tl-gas-trend" style="color:var(--sev-normal)">STEADY (ACTIVE)</span>
             </div>
-            <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:10px;text-align:center">
-              <div style="font-size:10px;color:var(--text-dim);font-weight:700">TEMPERATURE</div>
-              <div id="tel-temp" style="font-size:22px;font-weight:800;color:var(--text-main);margin:4px 0">24.5°C</div>
-              <div id="tel-temp-status" style="font-size:10px;color:#34d399">NORMAL (ACTIVE)</div>
+            <!-- Temp -->
+            <div class="telemetry-tile">
+              <span class="tl-label">Temperature</span>
+              <span class="tl-val" id="tl-temp">24.0°C</span>
+              <span class="tl-status" id="tl-temp-status" style="color:var(--sev-normal)">NORMAL</span>
             </div>
-            <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:10px;text-align:center">
-              <div style="font-size:10px;color:var(--text-dim);font-weight:700">HUMIDITY</div>
-              <div id="tel-hum" style="font-size:22px;font-weight:800;color:var(--text-main);margin:4px 0">48.0%</div>
-              <div style="font-size:10px;color:var(--text-dim)">ACTIVE</div>
+            <!-- Movement -->
+            <div class="telemetry-tile">
+              <span class="tl-label">Movement / IMU</span>
+              <span class="tl-val" id="tl-move" style="font-size:16px">ACTIVE</span>
+              <span class="tl-status" id="tl-inact-sec" style="color:var(--text-muted)">Inactivity: 0s</span>
+            </div>
+            <!-- Posture -->
+            <div class="telemetry-tile">
+              <span class="tl-label">Worker Posture</span>
+              <span class="tl-val" id="tl-posture" style="font-size:16px">STANDING</span>
+              <span class="tl-status" style="color:var(--sev-normal)">PASS Connected</span>
             </div>
           </div>
 
-          <!-- Movement & Posture -->
-          <div class="grid2">
-            <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:10px;display:flex;align-items:center;justify-content:space-between">
-              <div>
-                <div style="font-size:10px;color:var(--text-dim);font-weight:700">WORKER DISPLACEMENT</div>
-                <div id="tel-move" style="font-size:14px;font-weight:700;color:#34d399">ACTIVE MOVEMENT</div>
+          <!-- Multi-line SVG Telemetry Graph (Gas & Temperature over time) -->
+          <div style="border-top:1px solid var(--border-subtle);padding-top:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <span style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase">Live Telemetry Trend (Last 30 Seconds)</span>
+              <div style="display:flex;gap:14px;font-size:11px;color:var(--text-muted)">
+                <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:2px;background:#ef4444"></span> Gas Level (%)</span>
+                <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:2px;background:#f59e0b"></span> Temperature (°C)</span>
               </div>
-              <div id="tel-inactivity" style="font-size:11px;color:var(--text-dim)">Inactivity: 0s</div>
             </div>
-            <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:10px;display:flex;align-items:center;justify-content:space-between">
-              <div>
-                <div style="font-size:10px;color:var(--text-dim);font-weight:700">CLASSIFIED POSTURE</div>
-                <div id="tel-posture" style="font-size:14px;font-weight:700;color:#60a5fa">STANDING</div>
-              </div>
-              <div style="font-size:11px;color:var(--text-dim)">Vision / IMU</div>
+            <div class="chart-container" style="height:120px" id="live-telemetry-svg">
+              <!-- Rendered via JS -->
             </div>
           </div>
         </div>
 
         <!-- Expected vs Actual State Comparison -->
         <div class="card">
-          <h2>Expected vs Actual State Verification</h2>
-          <div style="margin-bottom:10px">
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px">EXPECTED BASELINE:</div>
-            <div id="m-expected" style="font-size:12px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:8px 12px;color:#cbd5e1">
-              Continuous movement; Atmospheric gas < 30%; Temp < 35°C
-            </div>
+          <div class="card-header">
+            <div class="card-title">Expected vs. Observed Operational State</div>
+            <span class="badge badge-neutral">Rule Verification</span>
           </div>
-          <div>
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px">OBSERVED ACTUAL:</div>
-            <div id="m-actual" style="font-size:12px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:8px 12px;color:#cbd5e1">
-              Personnel: Present (STANDING); Movement: Active; Gas: 8.0%
+          <div class="grid-2">
+            <div style="background:var(--bg-subtle);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:12px">
+              <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px">EXPECTED PROTOCOL BASELINE</div>
+              <div id="mon-expected" style="font-size:12px;color:var(--text-secondary);line-height:1.5">
+                Continuous personnel movement; Atmospheric gas &lt; 25%; Temp &lt; 35°C
+              </div>
+            </div>
+            <div style="background:var(--bg-subtle);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:12px">
+              <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px">OBSERVED TELEMETRY STATE</div>
+              <div id="mon-actual" style="font-size:12px;color:var(--text-primary);font-weight:600;line-height:1.5">
+                Personnel: Present (STANDING); Movement: Active; Gas: 8.0%
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- RIGHT COLUMN: Real Laptop Camera & Threat Assessment -->
+      <!-- RIGHT COLUMN: Real Laptop Webcam + Threat Assessment Card -->
       <div>
-        <!-- Camera Panel (Real getUserMedia + Honest Status) -->
-        <div class="card" style="padding:0;overflow:hidden">
-          <div style="background:#0f172a;padding:10px 16px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between">
-            <span style="font-size:12px;font-weight:700;color:#cbd5e1">📷 WEBCAM SURVEILLANCE FEED</span>
-            <div id="cam-status-badge">
-              <span class="badge badge-neutral">INITIALIZING FEED</span>
+        <!-- Real Laptop Webcam Surveillance Frame -->
+        <div class="camera-box" style="margin-bottom:18px">
+          <div class="camera-header">
+            <span>📷 CAMERA SURVEILLANCE FEED</span>
+            <span class="badge badge-neutral" id="cam-status-pill">INITIALIZING</span>
+          </div>
+
+          <div class="camera-viewport">
+            <video id="webcam-video" autoplay playsinline muted style="display:none"></video>
+            <div class="camera-placeholder" id="cam-fallback">
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:8px">
+                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                <circle cx="12" cy="13" r="3"/>
+              </svg>
+              <div style="font-size:13px;font-weight:700;color:#f8fafc">Laptop Video Feed</div>
+              <div style="font-size:11px;color:#94a3b8;margin:4px 0 12px 0">Connect your local device webcam for live control-room testing</div>
+              <button class="btn btn-primary btn-sm" onclick="connectWebcam()">Connect Laptop Webcam</button>
             </div>
           </div>
 
-          <div style="position:relative;background:#000;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;overflow:hidden">
-            <video id="webcam-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:none"></video>
-            <div id="cam-fallback" style="text-align:center;padding:20px">
-              <div style="font-size:42px;margin-bottom:10px">📷</div>
-              <div style="font-size:13px;font-weight:700;color:#cbd5e1">Real Camera Stream</div>
-              <p style="font-size:11px;color:var(--text-dim);margin-top:4px">
-                Click below to connect your real laptop webcam via browser permissions.
-              </p>
-              <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="connectWebcam()">Connect Laptop Webcam</button>
-            </div>
-          </div>
-
-          <div style="background:#0f172a;padding:8px 14px;border-top:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;font-size:11px">
-            <span style="color:var(--text-dim)">CV INFERENCE ENGINE:</span>
-            <span id="cv-label" style="font-weight:700;color:#60a5fa">SIMULATION TESTBENCH (NO RANDOM FAKE BOUNDING BOXES)</span>
+          <div class="camera-footer">
+            <span>COMPUTER VISION ANALYSIS:</span>
+            <span style="font-weight:700;color:#60a5fa" id="cv-engine-tag">TESTBENCH (NO RANDOM FAKE BOUNDING BOXES)</span>
           </div>
         </div>
 
-        <!-- Intelligence Threat Card -->
-        <div id="threat-card" class="card sev-normal">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <div style="display:flex;align-items:center;gap:10px">
-              <span id="sev-badge">${badge('Normal')}</span>
-              <span id="threat-title" style="font-weight:800;font-size:15px">Normal Safe Operations</span>
+        <!-- Real-Time Threat Assessment Card -->
+        <div class="card" id="mon-threat-card" style="border-left:4px solid var(--sev-normal)">
+          <div class="card-header">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span id="mon-sev-badge">${badgeHtml('Normal')}</span>
+                <span id="mon-threat-title" style="font-size:15px;font-weight:800;color:var(--text-primary)">Normal Safe Operations</span>
+              </div>
+              <div class="card-subtitle" id="mon-threat-zone" style="margin-top:2px">Zone 01 · Baseline Operations</div>
             </div>
-            <span id="threat-zone" style="font-size:12px;color:var(--text-dim)">Zone 01</span>
           </div>
 
-          <div id="ev-container" style="margin-bottom:12px">
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Empirical Evidence Points</div>
-            <div id="ev-list" style="font-size:12px;color:#34d399">✓ All active sensors operate within baseline tolerances.</div>
+          <!-- Correlated Evidence List -->
+          <div style="margin-bottom:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px">Empirical Evidence Points</div>
+            <div id="mon-evidence-list" style="font-size:12px;color:var(--sev-normal-text);background:var(--sev-normal-bg);padding:8px 12px;border-radius:var(--radius-sm);border:1px solid var(--sev-normal-border)">
+              ✓ All active sensors operate within baseline tolerances.
+            </div>
           </div>
 
-          <div id="mech-container" style="margin-bottom:12px">
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Triggered Mechanisms</div>
-            <div id="mech-list" style="font-size:12px;color:var(--text-dim)">None</div>
+          <!-- Triggered Failure Mechanisms -->
+          <div style="margin-bottom:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px">Triggered Mechanisms</div>
+            <div id="mon-mech-list" style="font-size:12px;color:var(--text-muted)">None (Nominal)</div>
           </div>
 
-          <div style="background:rgba(0,0,0,0.25);border-radius:var(--radius-sm);padding:10px 14px">
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px">Tactical Responder Directive</div>
-            <div id="tactical-directive" style="font-size:13px;font-weight:600">All atmospheric, thermal, and personnel activity indicators are within safe operating limits.</div>
+          <!-- Tactical Directive -->
+          <div style="background:var(--bg-subtle);border-radius:var(--radius-md);padding:12px;border:1px solid var(--border-subtle)">
+            <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Tactical Responder Directive</div>
+            <div id="mon-directive" style="font-size:12px;font-weight:600;color:var(--text-primary);line-height:1.4">
+              All atmospheric, thermal, and personnel activity indicators are within safe operating limits.
+            </div>
           </div>
         </div>
       </div>
     </div>
   `;
 
-  // Connect WebSocket to backend stream
   connectLiveWebSocket();
 }
 
@@ -472,7 +762,6 @@ function connectLiveWebSocket() {
   };
 
   wsConn.onclose = () => {
-    console.log('WS disconnected. Reconnecting in 3s...');
     setTimeout(() => {
       if (currentPage === 'monitoring') connectLiveWebSocket();
     }, 3000);
@@ -493,97 +782,151 @@ function updateMonitoringUI(data) {
   if (stageEl && m.stage) stageEl.textContent = m.stage;
 
   // 2. Telemetry
-  const telGas = document.getElementById('tel-gas');
+  const telGas = document.getElementById('tl-gas');
   if (telGas) telGas.textContent = `${r.gas_level}%`;
 
-  const telGasTrend = document.getElementById('tel-gas-trend');
+  const telGasTrend = document.getElementById('tl-gas-trend');
   if (telGasTrend && a.temporal) {
     telGasTrend.textContent = `${a.temporal.gas_trend} (${a.sensor_status?.gas || 'ACTIVE'})`;
-    telGasTrend.style.color = a.temporal.gas_trend === 'RAPID_SURGE' ? '#ef4444' : a.temporal.gas_trend === 'RISING' ? '#f59e0b' : '#34d399';
+    telGasTrend.style.color = a.temporal.gas_trend === 'RAPID_SURGE' ? 'var(--sev-critical)' : a.temporal.gas_trend === 'RISING' ? 'var(--sev-warning)' : 'var(--sev-normal)';
   }
 
-  const telTemp = document.getElementById('tel-temp');
+  const telTemp = document.getElementById('tl-temp');
   if (telTemp) telTemp.textContent = `${r.temperature}°C`;
 
-  const telMove = document.getElementById('tel-move');
+  const telMove = document.getElementById('tl-move');
   if (telMove) {
-    telMove.textContent = r.movement ? 'ACTIVE MOVEMENT' : 'NO MOVEMENT DETECTED';
-    telMove.style.color = r.movement ? '#34d399' : '#ef4444';
+    telMove.textContent = r.movement ? 'ACTIVE' : 'NO MOVEMENT';
+    telMove.style.color = r.movement ? 'var(--sev-normal)' : 'var(--sev-critical)';
   }
 
-  const telInact = document.getElementById('tel-inactivity');
+  const telInact = document.getElementById('tl-inact-sec');
   if (telInact && a.temporal) {
     telInact.textContent = `Inactivity: ${a.temporal.inactivity_duration_sec}s`;
   }
 
-  const telPosture = document.getElementById('tel-posture');
+  const telPosture = document.getElementById('tl-posture');
   if (telPosture) telPosture.textContent = r.posture || 'STANDING';
 
   // 3. Expected vs Actual
-  const expEl = document.getElementById('m-expected');
+  const expEl = document.getElementById('mon-expected');
   if (expEl && a.expected_state) expEl.textContent = a.expected_state;
 
-  const actEl = document.getElementById('m-actual');
+  const actEl = document.getElementById('mon-actual');
   if (actEl && a.actual_state) actEl.textContent = a.actual_state;
 
   // 4. ML Early Warning Risk Badge
-  const mlContainer = document.getElementById('ml-badge-container');
-  if (mlContainer && a.ml_risk) {
+  const mlBadge = document.getElementById('mon-ml-badge');
+  if (mlBadge && a.ml_risk) {
     const risk = a.ml_risk.risk_percentage;
     const badgeClass = risk >= 70 ? 'badge-critical' : risk >= 40 ? 'badge-warning' : 'badge-normal';
-    mlContainer.innerHTML = `<span class="badge ${badgeClass}">ML RISK: ${risk}% (${a.ml_risk.trend})</span>`;
+    mlBadge.className = `badge ${badgeClass}`;
+    mlBadge.textContent = `ML RISK: ${risk}% (${a.ml_risk.trend})`;
   }
 
   // 5. Threat Assessment Card
-  const tc = document.getElementById('threat-card');
+  const tc = document.getElementById('mon-threat-card');
   if (tc) {
-    tc.className = `card ${sc(a.severity)}`;
-    document.getElementById('sev-badge').innerHTML = badge(a.severity);
-    document.getElementById('threat-title').textContent = a.incident_type || 'Operations';
-    document.getElementById('threat-zone').textContent = r.zone || 'Zone 01';
+    const sevColor = a.severity === 'Critical' ? 'var(--sev-critical)' : a.severity === 'High' ? 'var(--sev-high)' : a.severity === 'Warning' ? 'var(--sev-warning)' : 'var(--sev-normal)';
+    tc.style.borderLeftColor = sevColor;
+
+    document.getElementById('mon-sev-badge').innerHTML = badgeHtml(a.severity);
+    document.getElementById('mon-threat-title').textContent = a.incident_type || 'Operations';
+    document.getElementById('mon-threat-zone').textContent = `${r.zone || 'Zone 01'} · Monitored Worker: ${w.name || 'Unassigned'}`;
 
     // Evidence
-    const evList = document.getElementById('ev-list');
+    const evList = document.getElementById('mon-evidence-list');
     if (evList) {
       if (a.evidence && a.evidence.length > 0) {
-        evList.innerHTML = a.evidence.map(e => `<div style="color:#f87171;margin-bottom:3px">⚠️ ${e}</div>`).join('');
+        evList.style.background = 'var(--sev-critical-bg)';
+        evList.style.color = 'var(--sev-critical-text)';
+        evList.style.borderColor = 'var(--sev-critical-border)';
+        evList.innerHTML = a.evidence.map(e => `<div style="margin-bottom:3px">⚠️ ${e}</div>`).join('');
       } else {
-        evList.innerHTML = '<span style="color:#34d399">✓ All active sensors operate within baseline tolerances.</span>';
+        evList.style.background = 'var(--sev-normal-bg)';
+        evList.style.color = 'var(--sev-normal-text)';
+        evList.style.borderColor = 'var(--sev-normal-border)';
+        evList.innerHTML = '✓ All active sensors operate within baseline tolerances.';
       }
     }
 
     // Mechanisms
-    const mechList = document.getElementById('mech-list');
+    const mechList = document.getElementById('mon-mech-list');
     if (mechList) {
       if (a.mechanisms && a.mechanisms.length > 0) {
-        mechList.innerHTML = a.mechanisms.map(m => `<div style="color:#fbbf24;margin-bottom:3px">⚡ ${m}</div>`).join('');
+        mechList.innerHTML = a.mechanisms.map(m => `<div style="color:var(--sev-warning-text);font-weight:600;margin-bottom:3px">⚡ ${m}</div>`).join('');
       } else {
-        mechList.innerHTML = '<span style="color:var(--text-dim)">None</span>';
+        mechList.innerHTML = '<span style="color:var(--text-muted)">None (Nominal)</span>';
       }
     }
 
     // Tactical Directive
-    const td = document.getElementById('tactical-directive');
+    const td = document.getElementById('mon-directive');
     if (td && a.recommended_action) td.textContent = a.recommended_action;
   }
+
+  // 6. Update Rolling Telemetry SVG Chart
+  liveTelemetryHistory.push({
+    gas: r.gas_level || 0,
+    temp: r.temperature || 20
+  });
+  if (liveTelemetryHistory.length > 30) liveTelemetryHistory.shift();
+  renderTelemetryChart();
 }
 
-// Laptop Webcam Access via getUserMedia
+function renderTelemetryChart() {
+  const container = document.getElementById('live-telemetry-svg');
+  if (!container || liveTelemetryHistory.length < 2) return;
+
+  const w = container.clientWidth || 400;
+  const h = 120;
+  const n = liveTelemetryHistory.length;
+
+  const maxGas = 80;
+  const maxTemp = 60;
+
+  // Build SVG polyline points
+  const gasPoints = liveTelemetryHistory.map((d, i) => {
+    const x = (i / (n - 1)) * w;
+    const y = h - ((d.gas / maxGas) * (h - 10));
+    return `${x},${y}`;
+  }).join(' ');
+
+  const tempPoints = liveTelemetryHistory.map((d, i) => {
+    const x = (i / (n - 1)) * w;
+    const y = h - ((d.temp / maxTemp) * (h - 10));
+    return `${x},${y}`;
+  }).join(' ');
+
+  container.innerHTML = `
+    <svg class="chart-svg" viewBox="0 0 ${w} ${h}">
+      <!-- Grid lines -->
+      <line x1="0" y1="${h/2}" x2="${w}" y2="${h/2}" stroke="#f1f5f9" stroke-width="1"/>
+      <line x1="0" y1="${h-1}" x2="${w}" y2="${h-1}" stroke="#e2e8f0" stroke-width="1"/>
+      <!-- Polylines -->
+      <polyline points="${tempPoints}" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
+      <polyline points="${gasPoints}" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  `;
+}
+
 window.connectWebcam = async () => {
   const video = document.getElementById('webcam-video');
   const fallback = document.getElementById('cam-fallback');
-  const badgeEl = document.getElementById('cam-status-badge');
+  const badgeEl = document.getElementById('cam-status-pill');
 
   try {
     activeWebcamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
     video.srcObject = activeWebcamStream;
     video.style.display = 'block';
     fallback.style.display = 'none';
-    badgeEl.innerHTML = '<span class="badge badge-normal">REAL WEBCAM CONNECTED</span>';
-    document.getElementById('cv-label').textContent = 'WEBCAM ACTIVE · CV ANALYSIS: NOT AVAILABLE (PHASE 2)';
+    badgeEl.className = 'badge badge-normal';
+    badgeEl.textContent = 'REAL CAMERA CONNECTED';
+    document.getElementById('cv-engine-tag').textContent = 'WEBCAM ACTIVE · CV ANALYSIS: NOT AVAILABLE (PHASE 2)';
   } catch (err) {
-    badgeEl.innerHTML = '<span class="badge badge-warning">WEBCAM PERMISSION DENIED</span>';
-    alert('Webcam access was denied or unavailable. Running in honest testbench mode.');
+    badgeEl.className = 'badge badge-warning';
+    badgeEl.textContent = 'PERMISSION DENIED';
+    alert('Webcam access was denied or is unavailable. Running in testbench simulation mode.');
   }
 };
 
@@ -611,23 +954,22 @@ window.loadScenarioPreset = async (name) => {
   await apiFetch(`/api/simulate?scenario=${name}&zone=${zone}`);
 };
 
-window.onZoneChange = async (zone) => {
+window.onZoneSelectChange = async (zone) => {
   const dash = await apiFetch('/api/dashboard');
   const zData = (dash?.zones || []).find(z => z.id === zone);
   const tagEl = document.getElementById('mon-worker-tag');
   if (tagEl && zData) {
     if (zData.workers && zData.workers.length > 0) {
-      tagEl.textContent = `${zData.workers[0].name} (${zData.workers[0].id})`;
+      tagEl.textContent = `${zData.workers[0].name} (${zData.workers[0].id}) · ${zData.workers[0].role || 'Specialist'}`;
     } else {
       tagEl.textContent = 'Unassigned Personnel';
     }
   }
-  window.loadScenarioPreset('normal');
+  window.loadScenarioPreset('timeline');
 };
 
-
 // ══════════════════════════════════════════════════════════════════════════════
-// 3. INCIDENTS & EVIDENCE (Locked Position 3)
+// 3. INCIDENTS & EVIDENCE — (LOCKED POSITION 3)
 // ══════════════════════════════════════════════════════════════════════════════
 async function renderIncidents(el) {
   let incidents = [];
@@ -635,504 +977,673 @@ async function renderIncidents(el) {
   let activeFilter = 'All';
 
   el.innerHTML = `
-    <div class="header-banner">
-      <div>
-        <div class="page-title">Incidents & Evidence Repository</div>
-        <div class="page-sub">Persistent incident event registry, multi-vector evidence logs, and sensor snapshots</div>
+    <!-- Top Header -->
+    <div class="page-header">
+      <div class="page-title-wrap">
+        <h1 class="page-title">Incidents & Evidence Repository</h1>
+        <div class="page-sub">Comprehensive audit trail of detected safety events, multi-vector evidence logs, and telemetry snapshots</div>
       </div>
+      <!-- Severity Filter Buttons -->
       <div style="display:flex;gap:6px">
         ${['All', 'Critical', 'High', 'Warning', 'Normal'].map(f => `
-          <button class="btn btn-outline btn-sm filter-pill ${f === 'All' ? 'btn-primary' : ''}" onclick="setIncidentFilter('${f}', this)">
+          <button class="btn btn-secondary btn-sm inc-filter-btn ${f === 'All' ? 'btn-primary' : ''}" onclick="filterIncidents('${f}', this)">
             ${f}
-          </button>`).join('')}
+          </button>
+        `).join('')}
       </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:360px 1fr;gap:18px">
-      <!-- Incident List -->
-      <div class="card" style="padding:12px;height:calc(100vh - 180px);display:flex;flex-direction:column">
-        <h2 style="margin-bottom:10px">
-          <span>Incident Queue</span>
-          <span id="inc-count" style="font-size:11px;color:var(--text-dim)"></span>
-        </h2>
-        <div id="inc-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px">Loading incidents…</div>
+    <!-- Master-Detail Grid -->
+    <div class="grid-split-7-5">
+      <!-- LEFT: Main Incident Table -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-weight:700;font-size:13px">Recorded Incidents</span>
+            <span class="badge badge-neutral" id="inc-table-count">0 Events</span>
+          </div>
+          <div style="width:200px">
+            <input type="text" class="form-input" id="inc-search-input" placeholder="Filter code/worker..." oninput="onIncidentSearch(this.value)" style="padding:5px 10px;font-size:11px"/>
+          </div>
+        </div>
+
+        <div class="table-container" style="border:none;max-height:calc(100vh - 280px);overflow-y:auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Zone</th>
+                <th>Worker</th>
+                <th>Severity</th>
+                <th>Status</th>
+                <th>Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="incidents-table-body">
+              <tr><td colspan="6" class="empty-state">Loading repository…</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <!-- Incident Detail -->
-      <div id="inc-detail" class="card" style="height:calc(100vh - 180px);overflow-y:auto">
-        <div class="empty">
-          <div class="ico">📋</div>
-          <p>Select an incident from the queue to view full audit logs, empirical evidence, and snapshots.</p>
+      <!-- RIGHT: Incident Detail Inspector Drawer -->
+      <div class="card" id="inc-detail-card" style="max-height:calc(100vh - 280px);overflow-y:auto">
+        <div class="empty-state">
+          <div class="empty-state-icon">📋</div>
+          <div class="empty-state-text">Select an incident from the table to inspect empirical evidence, telemetry snapshots, and lifecycle audit records.</div>
         </div>
       </div>
     </div>
   `;
 
-  window.setIncidentFilter = (f, btn) => {
-    activeFilter = f;
-    document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('btn-primary'));
-    btn.classList.add('btn-primary');
-    renderList();
-  };
-
-  window.selectIncident = (id) => {
-    selected = incidents.find(i => i.id === id);
-    renderDetail();
-  };
-
-  async function load() {
+  async function loadData() {
     const res = await apiFetch('/api/incidents');
     incidents = res?.incidents || [];
-    renderList();
-    if (incidents.length > 0 && !selected) {
-      selectIncident(incidents[0].id);
-    }
+    renderTable();
   }
 
-  function renderList() {
-    const listEl = document.getElementById('inc-list');
-    const filtered = activeFilter === 'All' ? incidents : incidents.filter(i => i.severity === activeFilter);
-    document.getElementById('inc-count').textContent = `${filtered.length} Recorded`;
+  function renderTable(searchTerm = '') {
+    const countBadge = document.getElementById('inc-table-count');
+    let filtered = incidents;
+
+    if (activeFilter !== 'All') {
+      filtered = filtered.filter(i => i.severity === activeFilter);
+    }
+    if (searchTerm) {
+      const q = searchTerm.toLowerCase();
+      filtered = filtered.filter(i =>
+        (i.incident_code || '').toLowerCase().includes(q) ||
+        (i.worker_name || '').toLowerCase().includes(q) ||
+        (i.zone || '').toLowerCase().includes(q) ||
+        (i.incident_type || '').toLowerCase().includes(q)
+      );
+    }
+
+    if (countBadge) countBadge.textContent = `${filtered.length} Events`;
+
+    const body = document.getElementById('incidents-table-body');
+    if (!body) return;
 
     if (filtered.length === 0) {
-      listEl.innerHTML = '<div class="empty" style="padding:20px"><p>No incidents match filter.</p></div>';
+      body.innerHTML = `<tr><td colspan="6" class="empty-state">No incidents matching criteria.</td></tr>`;
       return;
     }
 
-    listEl.innerHTML = filtered.map(inc => `
-      <div onclick="selectIncident(${inc.id})" style="background:var(--bg-surface);border:1px solid ${selected?.id === inc.id ? 'var(--border-active)' : 'var(--border-subtle)'};border-radius:var(--radius-sm);padding:10px 12px;cursor:pointer;transition:border-color 0.15s">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <span style="font-weight:700;font-size:12px;color:#60a5fa">${inc.incident_code || '#' + inc.id}</span>
-          ${badge(inc.severity)}
-        </div>
-        <div style="font-weight:600;font-size:13px;margin-bottom:2px">${inc.incident_type}</div>
-        <div style="font-size:11px;color:var(--text-dim);display:flex;justify-content:space-between">
-          <span>${inc.zone}</span>
-          <span>${ft(inc.created_at || inc.timestamp)}</span>
-        </div>
-      </div>`).join('');
+    body.innerHTML = filtered.map(inc => `
+      <tr onclick="selectIncidentRow(${inc.id})" style="cursor:pointer;background:${selected?.id === inc.id ? 'var(--primary-light)' : 'transparent'}">
+        <td class="cell-mono">${inc.incident_code || '#' + inc.id}</td>
+        <td><b>${inc.zone}</b></td>
+        <td>${inc.worker_name || 'N/A'}</td>
+        <td>${badgeHtml(inc.severity)}</td>
+        <td><span class="badge badge-neutral">${inc.status}</span></td>
+        <td class="cell-meta">${ft(inc.created_at || inc.timestamp)}</td>
+      </tr>
+    `).join('');
+
+    if (!selected && filtered.length > 0) {
+      selectIncidentRow(filtered[0].id);
+    }
   }
 
-  function renderDetail() {
-    const dtEl = document.getElementById('inc-detail');
-    if (!selected) return;
-    const inc = selected;
-    const snap = inc.sensor_snapshot || {};
+  window.selectIncidentRow = (id) => {
+    selected = incidents.find(i => i.id === id);
+    renderTable(document.getElementById('inc-search-input')?.value || '');
+    renderDetailView();
+  };
 
-    dtEl.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border-subtle)">
+  window.filterIncidents = (filter, btn) => {
+    activeFilter = filter;
+    document.querySelectorAll('.inc-filter-btn').forEach(b => {
+      b.classList.remove('btn-primary');
+      b.classList.add('btn-secondary');
+    });
+    btn.classList.remove('btn-secondary');
+    btn.classList.add('btn-primary');
+    renderTable(document.getElementById('inc-search-input')?.value || '');
+  };
+
+  window.onIncidentSearch = (query) => {
+    renderTable(query);
+  };
+
+  function renderDetailView() {
+    const detailEl = document.getElementById('inc-detail-card');
+    if (!detailEl || !selected) return;
+
+    const snap = selected.sensor_snapshot || {};
+    const transitions = selected.transitions || [];
+
+    detailEl.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border-subtle)">
         <div>
-          <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:18px;font-weight:800;color:#fff">${inc.incident_code}</span>
-            ${badge(inc.severity)}
-            <span class="badge badge-neutral">${inc.status}</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="cell-mono" style="font-size:14px">${selected.incident_code}</span>
+            ${badgeHtml(selected.severity)}
           </div>
-          <div style="font-size:12px;color:var(--text-dim);margin-top:4px">
-            Zone: ${inc.zone} · Worker: ${inc.worker_name || 'N/A'} (${inc.worker_id || 'N/A'}) · Detected: ${fdt(inc.created_at)}
-          </div>
+          <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-top:2px">${selected.incident_type}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${selected.zone} · Worker: ${selected.worker_name || 'Unassigned'}</div>
         </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-primary btn-sm" onclick="navigate('ack')">🛡️ Manage in Acknowledgement</button>
-          <button class="btn btn-outline btn-sm" onclick="navigate('ai')">🤖 View AI Advisory</button>
-        </div>
+        <span class="badge badge-neutral" style="font-size:12px">${selected.status}</span>
       </div>
 
-      <!-- Evidence Breakdown -->
-      <div style="margin-bottom:18px">
-        <h2 style="font-size:12px">Empirical Evidence Points</h2>
+      <!-- Evidence Points -->
+      <div style="margin-bottom:16px">
+        <div class="form-label">Correlated Evidence Points</div>
         <div style="display:flex;flex-direction:column;gap:6px">
-          ${(inc.evidence || []).map(e => `
-            <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:#f87171">
+          ${(selected.evidence || []).map(e => `
+            <div style="background:var(--sev-critical-bg);border:1px solid var(--sev-critical-border);color:var(--sev-critical-text);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px">
               ⚠️ ${e}
-            </div>`).join('')}
+            </div>
+          `).join('') || '<div style="color:var(--text-muted);font-size:12px">Baseline nominal event</div>'}
         </div>
       </div>
 
-      <!-- Triggered Mechanisms -->
-      <div style="margin-bottom:18px">
-        <h2 style="font-size:12px">Failure & Hazard Mechanisms Triggered</h2>
+      <!-- Telemetry Snapshot at T-0 -->
+      <div style="margin-bottom:16px">
+        <div class="form-label">Telemetry Snapshot at T-0</div>
+        <div class="grid-4">
+          <div class="telemetry-tile">
+            <span class="tl-label">Gas Level</span>
+            <span class="tl-val">${snap.gas_level !== undefined ? snap.gas_level + '%' : '—'}</span>
+          </div>
+          <div class="telemetry-tile">
+            <span class="tl-label">Temperature</span>
+            <span class="tl-val">${snap.temperature !== undefined ? snap.temperature + '°C' : '—'}</span>
+          </div>
+          <div class="telemetry-tile">
+            <span class="tl-label">Movement</span>
+            <span class="tl-val" style="font-size:14px">${snap.movement ? 'ACTIVE' : 'ABSENT'}</span>
+          </div>
+          <div class="telemetry-tile">
+            <span class="tl-label">Posture</span>
+            <span class="tl-val" style="font-size:14px">${snap.posture || 'STANDING'}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Directive -->
+      <div style="background:var(--primary-light);border:1px solid var(--primary-border);border-radius:var(--radius-md);padding:12px;margin-bottom:16px">
+        <div style="font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase;margin-bottom:4px">OPERATIONAL DIRECTIVE</div>
+        <div style="font-size:12px;color:var(--text-primary);line-height:1.4">${selected.recommended_action || 'Inspect area and ensure safety.'}</div>
+      </div>
+
+      <!-- Lifecycle Stepper / Transitions -->
+      <div>
+        <div class="form-label">Incident Lifecycle & Audit Trail</div>
         <div style="display:flex;flex-direction:column;gap:6px">
-          ${(inc.mechanisms || []).map(m => `
-            <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:#fbbf24">
-              ⚡ ${m}
-            </div>`).join('')}
+          ${transitions.length > 0 ? transitions.map(t => `
+            <div style="background:var(--bg-subtle);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:8px 12px;display:flex;align-items:center;justify-content:space-between;font-size:11px">
+              <span><b>${t.from_status} → ${t.to_status}</b> (${t.performed_by})</span>
+              <span class="cell-meta">${ft(t.timestamp)}</span>
+            </div>
+          `).join('') : `
+            <div style="font-size:12px;color:var(--text-muted)">Initial creation state logged. No status changes.</div>
+          `}
         </div>
-      </div>
-
-      <!-- Sensor Snapshot at Incident Time -->
-      <div style="margin-bottom:18px">
-        <h2 style="font-size:12px">Telemetry Snapshot at T-0</h2>
-        <div class="grid4">
-          <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:10px;text-align:center">
-            <div style="font-size:10px;color:var(--text-dim)">GAS LEVEL</div>
-            <div style="font-size:16px;font-weight:700">${snap.gas_level !== undefined ? snap.gas_level + '%' : '—'}</div>
-          </div>
-          <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:10px;text-align:center">
-            <div style="font-size:10px;color:var(--text-dim)">TEMPERATURE</div>
-            <div style="font-size:16px;font-weight:700">${snap.temperature !== undefined ? snap.temperature + '°C' : '—'}</div>
-          </div>
-          <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:10px;text-align:center">
-            <div style="font-size:10px;color:var(--text-dim)">MOVEMENT</div>
-            <div style="font-size:16px;font-weight:700">${snap.movement ? 'ACTIVE' : 'ABSENT'}</div>
-          </div>
-          <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:10px;text-align:center">
-            <div style="font-size:10px;color:var(--text-dim)">POSTURE</div>
-            <div style="font-size:16px;font-weight:700">${snap.posture || 'STANDING'}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tactical Directive -->
-      <div style="background:rgba(37,99,235,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:var(--radius-sm);padding:12px 16px">
-        <div style="font-size:11px;font-weight:700;color:#93c5fd;margin-bottom:4px">OPERATIONAL DIRECTIVE</div>
-        <div style="font-size:13px;line-height:1.5">${inc.recommended_action}</div>
       </div>
     `;
   }
 
-  load();
+  loadData();
 }
 
-
 // ══════════════════════════════════════════════════════════════════════════════
-// 4. AI EXPLANATION (Locked Position 4)
+// 4. AI EXPLANATION — (LOCKED POSITION 4)
 // ══════════════════════════════════════════════════════════════════════════════
 async function renderAI(el) {
   let incidents = [];
   let selected = null;
 
   el.innerHTML = `
-    <div class="header-banner">
-      <div>
-        <div class="page-title">AI Safety Advisory & Synthesis</div>
-        <div class="page-sub">Evidence-based operational narrative synthesis and root-cause advisory</div>
+    <!-- Top Header -->
+    <div class="page-header">
+      <div class="page-title-wrap">
+        <h1 class="page-title">AI Safety Advisory & Synthesis</h1>
+        <div class="page-sub">Evidence-based operational narrative synthesis and root-cause safety advisory</div>
       </div>
+      <span class="badge badge-neutral" id="ai-mode-pill">DETERMINISTIC SAFETY ADVISORY</span>
     </div>
 
-    <div style="display:grid;grid-template-columns:320px 1fr;gap:18px">
-      <!-- Incidents list -->
-      <div class="card" style="padding:12px;height:calc(100vh - 180px);display:flex;flex-direction:column">
-        <h2>Select Event to Synthesize</h2>
-        <div id="ai-inc-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px">Loading…</div>
+    <div class="grid-split-7-5">
+      <!-- AI Synthesis Report Panel -->
+      <div class="card" id="ai-report-card">
+        <div class="empty-state">
+          <div class="empty-state-icon">🤖</div>
+          <div class="empty-state-text">Select an incident from the event list to generate a structured safety analysis report.</div>
+        </div>
       </div>
 
-      <!-- AI Synthesis Output -->
-      <div id="ai-synthesis" class="card" style="height:calc(100vh - 180px);overflow-y:auto">
-        <div class="empty">
-          <div class="ico">🤖</div>
-          <p>Select an incident to generate an operational intelligence advisory.</p>
+      <!-- Incidents Event Selector -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border-subtle)">
+          <div class="card-title">Select Incident to Synthesize</div>
+          <div class="card-subtitle">Choose an incident record for operational explanation</div>
+        </div>
+        <div id="ai-inc-list" style="max-height:calc(100vh - 280px);overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px">
+          Loading events…
         </div>
       </div>
     </div>
   `;
 
-  window.selectAiIncident = async (id) => {
-    selected = incidents.find(i => i.id === id);
-    const synthEl = document.getElementById('ai-synthesis');
-    synthEl.innerHTML = '<div class="empty"><div class="ico">⏳</div><p>Generating operational safety synthesis…</p></div>';
+  async function loadData() {
+    const res = await apiFetch('/api/incidents');
+    incidents = res?.incidents || [];
+    const listEl = document.getElementById('ai-inc-list');
+    if (!listEl) return;
 
-    const adv = await apiFetch(`/api/incidents/${id}/ai-explain`);
-    if (!adv) {
-      synthEl.innerHTML = '<div class="empty"><p>Advisory generation failed.</p></div>';
+    if (incidents.length === 0) {
+      listEl.innerHTML = '<div class="empty-state">No incidents available.</div>';
       return;
     }
 
-    synthEl.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border-subtle)">
-        <div>
-          <div style="font-weight:800;font-size:16px">${selected.incident_code}: ${selected.incident_type}</div>
-          <div style="font-size:12px;color:var(--text-dim);margin-top:2px">Zone: ${selected.zone} · Worker: ${selected.worker_name}</div>
+    listEl.innerHTML = incidents.map(inc => `
+      <div class="card" onclick="selectAiIncident(${inc.id})" style="padding:12px;cursor:pointer;border-color:${selected?.id === inc.id ? 'var(--primary)' : 'var(--border-subtle)'};background:${selected?.id === inc.id ? 'var(--primary-light)' : '#ffffff'}">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <span class="cell-mono">${inc.incident_code}</span>
+          ${badgeHtml(inc.severity)}
         </div>
-        <span class="badge ${adv.mode === 'GENAI_CONNECTED' ? 'badge-normal' : 'badge-warning'}">
-          ${adv.mode === 'GENAI_CONNECTED' ? 'OPENAI GPT-4o' : 'DETERMINISTIC ADVISORY ENGINE'}
+        <div style="font-weight:700;font-size:12px;color:var(--text-primary)">${inc.incident_type}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${inc.zone} · ${ft(inc.created_at)}</div>
+      </div>
+    `).join('');
+
+    if (incidents.length > 0) {
+      selectAiIncident(incidents[0].id);
+    }
+  }
+
+  window.selectAiIncident = async (id) => {
+    selected = incidents.find(i => i.id === id);
+    const reportCard = document.getElementById('ai-report-card');
+    if (!reportCard) return;
+
+    reportCard.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">⏳</div>
+        <div class="empty-state-text">Synthesizing operational safety report for ${selected.incident_code}…</div>
+      </div>
+    `;
+
+    const adv = await apiFetch(`/api/incidents/${id}/ai-explain`);
+    if (!adv) {
+      reportCard.innerHTML = '<div class="empty-state">Synthesis generation failed.</div>';
+      return;
+    }
+
+    const modePill = document.getElementById('ai-mode-pill');
+    if (modePill) {
+      if (adv.mode === 'GENAI_CONNECTED') {
+        modePill.className = 'badge badge-normal';
+        modePill.textContent = 'OPENAI GPT-4o-MINI ACTIVE';
+      } else {
+        modePill.className = 'badge badge-warning';
+        modePill.textContent = 'DETERMINISTIC SAFETY ADVISORY — NO LLM KEY CONFIGURED';
+      }
+    }
+
+    reportCard.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border-subtle)">
+        <div>
+          <div style="font-size:16px;font-weight:800;color:var(--text-primary)">${selected.incident_code}: ${selected.incident_type}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Zone: ${selected.zone} · Worker: ${selected.worker_name || 'N/A'} · Severity: ${selected.severity}</div>
+        </div>
+        <span class="badge ${adv.mode === 'GENAI_CONNECTED' ? 'badge-normal' : 'badge-neutral'}">
+          ${adv.mode === 'GENAI_CONNECTED' ? 'LLM Synthesized' : 'Deterministic Advisory'}
         </span>
       </div>
 
-      <!-- Architecture Pipeline Breadcrumbs -->
-      <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:16px;font-size:11px">
-        <div style="font-weight:700;color:var(--text-dim);margin-bottom:6px">PROCESSING PIPELINE:</div>
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          ${['Sensor Intake', '→', 'Temporal d/dt', '→', 'Expected vs Actual', '→', 'Evidence Correlation', '→', 'Severity Scoring', '→', 'Advisory Synthesis'].map(s => s === '→' ? `<span style="color:var(--text-dim)">→</span>` : `<span style="background:rgba(37,99,235,0.2);color:#93c5fd;padding:2px 8px;border-radius:4px;font-weight:600">${s}</span>`).join('')}
-        </div>
+      <!-- Structured Report Sections -->
+      <div style="display:flex;flex-direction:column;gap:14px">
+        ${(adv.structured_qa || []).map(item => `
+          <div style="background:var(--bg-subtle);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px">
+              ${item.q}
+            </div>
+            <div style="font-size:13px;color:var(--text-primary);line-height:1.5">
+              ${item.a}
+            </div>
+          </div>
+        `).join('')}
       </div>
 
-      <!-- Structured Q&A Advisory -->
-      <div style="display:flex;flex-direction:column;gap:12px">
-        ${(adv.structured_qa || []).map(item => `
-          <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:12px 16px">
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#60a5fa;margin-bottom:4px">${item.q}</div>
-            <div style="font-size:13px;line-height:1.6;color:var(--text-main)">${item.a}</div>
-          </div>`).join('')}
+      <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border-subtle);font-size:11px;color:var(--text-muted)">
+        Engine: ${adv.engine}
       </div>
     `;
   };
 
-  async function load() {
-    const res = await apiFetch('/api/incidents');
-    incidents = res?.incidents || [];
-    const listEl = document.getElementById('ai-inc-list');
-    if (incidents.length === 0) {
-      listEl.innerHTML = '<div class="empty" style="padding:20px"><p>No incidents found.</p></div>';
-      return;
-    }
-    listEl.innerHTML = incidents.map(inc => `
-      <div onclick="selectAiIncident(${inc.id})" style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:10px;cursor:pointer">
-        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-          <span style="font-weight:700;font-size:12px;color:#60a5fa">${inc.incident_code}</span>
-          ${badge(inc.severity)}
-        </div>
-        <div style="font-weight:600;font-size:12px">${inc.incident_type}</div>
-        <div style="font-size:11px;color:var(--text-dim)">${inc.zone} · ${ft(inc.created_at)}</div>
-      </div>`).join('');
-
-    if (incidents.length > 0) selectAiIncident(incidents[0].id);
-  }
-
-  load();
+  loadData();
 }
 
-
 // ══════════════════════════════════════════════════════════════════════════════
-// 5. ACKNOWLEDGEMENT (Locked Position 5)
+// 5. ACKNOWLEDGEMENT — (LOCKED POSITION 5)
 // ══════════════════════════════════════════════════════════════════════════════
 async function renderAcknowledgement(el) {
   el.innerHTML = `
-    <div class="header-banner">
-      <div>
-        <div class="page-title">Supervisor Incident Acknowledgement & Lifecycle</div>
-        <div class="page-sub">5-Stage Response Workflow: OPEN → ACKNOWLEDGED → UNDER INVESTIGATION → RESOLVED → CLOSED</div>
+    <!-- Top Header -->
+    <div class="page-header">
+      <div class="page-title-wrap">
+        <h1 class="page-title">Supervisor Incident Acknowledgement</h1>
+        <div class="page-sub">5-Stage Response Lifecycle: OPEN → ACKNOWLEDGED → UNDER INVESTIGATION → RESOLVED → CLOSED</div>
       </div>
     </div>
 
-    <!-- Workflow Progress Bar -->
-    <div class="card" style="margin-bottom:18px">
-      <h2>Standard Operational Response Lifecycle</h2>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;flex-wrap:wrap">
-        ${['1. OPEN (Detected)', '→', '2. ACKNOWLEDGED', '→', '3. UNDER INVESTIGATION', '→', '4. RESOLVED', '→', '5. CLOSED (Audited)'].map(s => s === '→' ? `<span style="color:var(--text-dim)">→</span>` : `<span style="background:var(--bg-surface);border:1px solid var(--border-subtle);padding:6px 14px;border-radius:var(--radius-sm);font-weight:700">${s}</span>`).join('')}
+    <!-- 5-Stage Stepper Guide -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header">
+        <div class="card-title">Standard Operating Procedure Lifecycle</div>
+        <span class="badge badge-neutral">OSHA Compliance Workflow</span>
+      </div>
+      <div class="lifecycle-stepper">
+        <div class="step-line"></div>
+        <div class="step-node">
+          <div class="step-circle active">1</div>
+          <span class="step-label active">OPEN</span>
+        </div>
+        <div class="step-node">
+          <div class="step-circle">2</div>
+          <span class="step-label">ACKNOWLEDGED</span>
+        </div>
+        <div class="step-node">
+          <div class="step-circle">3</div>
+          <span class="step-label">INVESTIGATION</span>
+        </div>
+        <div class="step-node">
+          <div class="step-circle">4</div>
+          <span class="step-label">RESOLVED</span>
+        </div>
+        <div class="step-node">
+          <div class="step-circle">5</div>
+          <span class="step-label">CLOSED</span>
+        </div>
       </div>
     </div>
 
-    <div class="grid2">
-      <!-- Active Incidents Awaiting Action -->
+    <!-- Active Action Queue & Audit Log Grid -->
+    <div class="grid-2">
+      <!-- Action Queue -->
       <div class="card">
-        <h2>Action Queue (Open & Acknowledged)</h2>
-        <div id="ack-queue" style="display:flex;flex-direction:column;gap:12px">Loading queue…</div>
+        <div class="card-header">
+          <div class="card-title">Active Action Queue (Open & Acknowledged)</div>
+          <span class="badge badge-warning" id="ack-queue-count">Pending</span>
+        </div>
+        <div id="ack-queue-container" style="display:flex;flex-direction:column;gap:12px">Loading…</div>
       </div>
 
-      <!-- Action Log / Audit History -->
+      <!-- Closed & Archived Incidents -->
       <div class="card">
-        <h2>Resolution Audit History</h2>
-        <div id="ack-history" style="display:flex;flex-direction:column;gap:12px">Loading history…</div>
+        <div class="card-header">
+          <div class="card-title">Resolution & Audit History (Closed)</div>
+          <span class="badge badge-normal" id="ack-closed-count">Archived</span>
+        </div>
+        <div id="ack-history-container" style="display:flex;flex-direction:column;gap:10px">Loading…</div>
       </div>
     </div>
   `;
 
-  window.transitionIncidentAction = async (id, newStatus) => {
-    const responder = document.getElementById(`resp-${id}`)?.value?.trim() || 'Control Room Supervisor';
-    const notes = document.getElementById(`notes-${id}`)?.value?.trim() || `Status advanced to ${newStatus}`;
+  async function loadData() {
+    const res = await apiFetch('/api/incidents');
+    const all = res?.incidents || [];
+    const pending = all.filter(i => ['OPEN', 'ACKNOWLEDGED', 'UNDER INVESTIGATION', 'RESOLVED'].includes(i.status));
+    const closed = all.filter(i => i.status === 'CLOSED');
 
+    const qCount = document.getElementById('ack-queue-count');
+    if (qCount) qCount.textContent = `${pending.length} Pending`;
+
+    const cCount = document.getElementById('ack-closed-count');
+    if (cCount) cCount.textContent = `${closed.length} Archived`;
+
+    const queueEl = document.getElementById('ack-queue-container');
+    if (queueEl) {
+      if (pending.length === 0) {
+        queueEl.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🛡️</div>
+            <div class="empty-state-text">Action queue is clear. No unacknowledged incidents.</div>
+          </div>
+        `;
+      } else {
+        queueEl.innerHTML = pending.map(inc => `
+          <div class="card" style="border-left:4px solid ${inc.severity === 'Critical' ? 'var(--sev-critical)' : inc.severity === 'Warning' ? 'var(--sev-warning)' : 'var(--primary)'};margin-bottom:0">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <span class="cell-mono" style="font-size:13px">${inc.incident_code} · ${inc.zone}</span>
+              <div style="display:flex;gap:6px">
+                ${badgeHtml(inc.severity)}
+                <span class="badge badge-neutral">${inc.status}</span>
+              </div>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:4px">${inc.incident_type}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">${(inc.evidence || []).join('; ') || 'Baseline exception'}</div>
+
+            <!-- Response Inputs -->
+            <div class="grid-2" style="margin-bottom:12px">
+              <div>
+                <label class="form-label">Responder Name</label>
+                <input type="text" class="form-input" id="resp-${inc.id}" value="${inc.acknowledged_by || 'Control Room Supervisor'}" style="padding:6px 10px;font-size:12px"/>
+              </div>
+              <div>
+                <label class="form-label">Action Notes</label>
+                <input type="text" class="form-input" id="notes-${inc.id}" placeholder="e.g. Ventilated tank, confirmed safe" style="padding:6px 10px;font-size:12px"/>
+              </div>
+            </div>
+
+            <!-- Action Transition Buttons -->
+            <div class="btn-group">
+              ${inc.status === 'OPEN' ? `
+                <button class="btn btn-primary btn-sm" onclick="transitionIncident(${inc.id}, 'ACKNOWLEDGED')">
+                  ✓ Acknowledge Alert
+                </button>
+              ` : ''}
+              ${inc.status === 'ACKNOWLEDGED' ? `
+                <button class="btn btn-secondary btn-sm" onclick="transitionIncident(${inc.id}, 'UNDER INVESTIGATION')">
+                  🔍 Dispatch Investigation
+                </button>
+              ` : ''}
+              ${['ACKNOWLEDGED', 'UNDER INVESTIGATION'].includes(inc.status) ? `
+                <button class="btn btn-primary btn-sm" style="background:var(--sev-normal);border-color:var(--sev-normal)" onclick="transitionIncident(${inc.id}, 'RESOLVED')">
+                  ✅ Mark Resolved
+                </button>
+              ` : ''}
+              ${inc.status === 'RESOLVED' ? `
+                <button class="btn btn-secondary btn-sm" onclick="transitionIncident(${inc.id}, 'CLOSED')">
+                  🔒 Archive & Close
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    const histEl = document.getElementById('ack-history-container');
+    if (histEl) {
+      if (closed.length === 0) {
+        histEl.innerHTML = '<div class="empty-state"><div class="empty-state-text">No closed incidents in audit log.</div></div>';
+      } else {
+        histEl.innerHTML = closed.map(inc => `
+          <div style="background:var(--bg-subtle);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+              <span class="cell-mono">${inc.incident_code}</span>
+              <span class="badge badge-normal">CLOSED</span>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted)">Resolved by: ${inc.resolved_by || 'Supervisor'} · ${fdt(inc.resolved_at)}</div>
+            <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">Notes: ${inc.resolution_notes || 'Resolved per procedure'}</div>
+          </div>
+        `).join('');
+      }
+    }
+  }
+
+  window.transitionIncident = async (id, status) => {
+    const resp = document.getElementById(`resp-${id}`)?.value || 'Supervisor';
+    const notes = document.getElementById(`notes-${id}`)?.value || `Status advanced to ${status}`;
     await apiFetch('/api/incidents/transition', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         incident_id: id,
-        new_status: newStatus,
-        performed_by: responder,
+        new_status: status,
+        performed_by: resp,
         action_notes: notes
       })
     });
-
-    loadQueue();
+    loadData();
   };
 
-  async function loadQueue() {
-    const res = await apiFetch('/api/incidents');
-    const all = res?.incidents || [];
-    const pending = all.filter(i => ['OPEN', 'ACKNOWLEDGED', 'UNDER INVESTIGATION', 'RESOLVED'].includes(i.status));
-    const resolved = all.filter(i => ['CLOSED'].includes(i.status));
-
-    const queueEl = document.getElementById('ack-queue');
-    if (pending.length === 0) {
-      queueEl.innerHTML = '<div class="empty" style="padding:24px"><div class="ico">🛡️</div><p>Action queue empty. All incidents addressed.</p></div>';
-    } else {
-      queueEl.innerHTML = pending.map(inc => `
-        <div class="card ${sc(inc.severity)}" style="padding:14px;margin-bottom:0">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <span style="font-weight:800;font-size:14px">${inc.incident_code} · ${inc.zone}</span>
-            <div style="display:flex;gap:6px">
-              ${badge(inc.severity)}
-              <span class="badge badge-neutral">${inc.status}</span>
-            </div>
-          </div>
-          <div style="font-size:13px;font-weight:600;margin-bottom:6px">${inc.incident_type}</div>
-          <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px">${(inc.evidence || []).join('; ')}</div>
-
-          <div class="grid2" style="margin-bottom:10px">
-            <div>
-              <label class="fl">Responder ID / Name</label>
-              <input type="text" id="resp-${inc.id}" value="${inc.acknowledged_by || 'Lead Supervisor'}" />
-            </div>
-            <div>
-              <label class="fl">Mitigation Action Notes</label>
-              <input type="text" id="notes-${inc.id}" placeholder="e.g. Ventilated corridor, confirmed worker exit" />
-            </div>
-          </div>
-
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            ${inc.status === 'OPEN' ? `
-              <button class="btn btn-warning btn-sm" onclick="transitionIncidentAction(${inc.id}, 'ACKNOWLEDGED')">
-                ✓ Acknowledge Alert
-              </button>` : ''}
-            ${inc.status === 'ACKNOWLEDGED' ? `
-              <button class="btn btn-primary btn-sm" onclick="transitionIncidentAction(${inc.id}, 'UNDER INVESTIGATION')">
-                🔍 Dispatch Investigation
-              </button>` : ''}
-            ${['ACKNOWLEDGED', 'UNDER INVESTIGATION'].includes(inc.status) ? `
-              <button class="btn btn-success btn-sm" onclick="transitionIncidentAction(${inc.id}, 'RESOLVED')">
-                ✅ Mark Resolved
-              </button>` : ''}
-            ${inc.status === 'RESOLVED' ? `
-              <button class="btn btn-outline btn-sm" onclick="transitionIncidentAction(${inc.id}, 'CLOSED')">
-                🔒 Archive & Close
-              </button>` : ''}
-          </div>
-        </div>`).join('');
-    }
-
-    const histEl = document.getElementById('ack-history');
-    if (resolved.length === 0) {
-      histEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:24px">No closed incidents in audit log.</div>';
-    } else {
-      histEl.innerHTML = resolved.map(inc => `
-        <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:10px 14px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-            <span style="font-weight:700;font-size:13px">${inc.incident_code}</span>
-            <span class="badge badge-normal">${inc.status}</span>
-          </div>
-          <div style="font-size:12px;color:var(--text-dim)">Resolved by: ${inc.resolved_by || 'Supervisor'} · ${fdt(inc.resolved_at)}</div>
-          <div style="font-size:12px;margin-top:4px;color:var(--text-muted)">Notes: ${inc.resolution_notes || 'Resolved according to protocol'}</div>
-        </div>`).join('');
-    }
-  }
-
-  loadQueue();
+  loadData();
 }
 
-
 // ══════════════════════════════════════════════════════════════════════════════
-// 6. PROFILE / SETTINGS (Locked Position 6)
+// 6. PROFILE / SETTINGS — (LOCKED POSITION 6)
 // ══════════════════════════════════════════════════════════════════════════════
 async function renderSettings(el) {
   let profiles = [];
   let selectedSlot = 'slot_1';
 
   el.innerHTML = `
-    <div class="header-banner">
-      <div>
-        <div class="page-title">Profile Slots & System Configuration</div>
+    <!-- Top Header -->
+    <div class="page-header">
+      <div class="page-title-wrap">
+        <h1 class="page-title">Profile Slots & System Configuration</h1>
         <div class="page-sub">Configure the 4 primary profile slots, sensor participation masks, and threshold parameters</div>
       </div>
     </div>
 
-    <!-- Exactly 4 Primary Profile Slots -->
-    <div class="grid4" id="slot-pills" style="margin-bottom:18px"></div>
+    <!-- EXACTLY 4 PRIMARY PROFILE SLOTS -->
+    <div class="grid-4" id="slot-pill-grid" style="margin-bottom:24px"></div>
 
-    <div class="grid2">
-      <!-- Profile Slot Details -->
-      <div class="card" id="slot-editor">
-        <h2>Slot Parameters</h2>
-        <div id="slot-form">Loading profile details…</div>
+    <div class="grid-2">
+      <!-- Profile Slot Details & Thresholds -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Slot Parameters & Thresholds</div>
+          <span class="badge badge-neutral" id="slot-num-badge">SLOT 01</span>
+        </div>
+        <div id="slot-editor-form">Loading form…</div>
       </div>
 
-      <!-- Sensor Configuration & Masking -->
+      <!-- Sensor Participation Mask -->
       <div class="card">
-        <h2>Sensor Enable / Disable Configuration</h2>
-        <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px">
-          Disabled sensors receive status <b>DISABLED</b> and are strictly masked from participation in deterministic severity calculations.
+        <div class="card-header">
+          <div class="card-title">Sensor Enable / Disable Configuration</div>
+          <span class="badge badge-neutral">Masking Logic</span>
+        </div>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">
+          Disabled sensors receive state <b>DISABLED</b> and are strictly barred from participating in deterministic severity calculations.
         </p>
-        <div id="sensor-toggles" style="display:flex;flex-direction:column;gap:10px">Loading toggles…</div>
-        <button class="btn btn-primary" style="width:100%;margin-top:18px" onclick="saveActiveSlot()">
+        <div id="sensor-toggle-list" style="display:flex;flex-direction:column;gap:8px">Loading toggles…</div>
+        <button class="btn btn-primary" style="width:100%;margin-top:20px" onclick="saveActiveSlot()">
           💾 Save Profile Configuration to SQLite
         </button>
       </div>
     </div>
   `;
 
-  window.selectProfileSlot = (slotId) => {
-    selectedSlot = slotId;
-    renderSlotPills();
-    renderSlotEditor();
-  };
-
   async function loadProfiles() {
     const res = await apiFetch('/api/profiles');
     profiles = res?.profiles || [];
-    renderSlotPills();
+    renderSlotCards();
     renderSlotEditor();
   }
 
-  function renderSlotPills() {
-    const container = document.getElementById('slot-pills');
+  function renderSlotCards() {
+    const container = document.getElementById('slot-pill-grid');
+    if (!container) return;
+
     container.innerHTML = profiles.map(p => `
-      <div onclick="selectProfileSlot('${p.id}')" style="background:${p.id === selectedSlot ? 'rgba(37,99,235,0.2)' : 'var(--bg-card)'};border:1px solid ${p.id === selectedSlot ? 'var(--border-active)' : 'var(--border-subtle)'};border-radius:var(--radius-sm);padding:12px;cursor:pointer;text-align:center">
-        <div style="font-size:10px;font-weight:700;color:#60a5fa;text-transform:uppercase">SLOT 0${p.slot_number}</div>
-        <div style="font-weight:700;font-size:13px;margin:4px 0">${p.name}</div>
-        <span class="badge ${p.status === 'ACTIVE' ? 'badge-normal' : 'badge-neutral'}">${p.status}</span>
-      </div>`).join('');
+      <div class="card" onclick="selectSlot('${p.id}')" style="cursor:pointer;border-color:${p.id === selectedSlot ? 'var(--primary)' : 'var(--border-subtle)'};background:${p.id === selectedSlot ? 'var(--primary-light)' : '#ffffff'};box-shadow:${p.id === selectedSlot ? 'var(--shadow-sm)' : 'var(--shadow-xs)'}">
+        <div style="font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase">SLOT 0${p.slot_number}</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin:4px 0">${p.name}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
+          <span style="font-size:11px;color:var(--text-muted)">${p.assigned_zone}</span>
+          <span class="badge ${p.status === 'ACTIVE' ? 'badge-normal' : 'badge-neutral'}">${p.status}</span>
+        </div>
+      </div>
+    `).join('');
   }
+
+  window.selectSlot = (slotId) => {
+    selectedSlot = slotId;
+    renderSlotCards();
+    renderSlotEditor();
+  };
 
   function renderSlotEditor() {
     const p = profiles.find(x => x.id === selectedSlot) || profiles[0];
     if (!p) return;
-    const formEl = document.getElementById('slot-form');
-    formEl.innerHTML = `
-      <label class="fl">Profile Name</label>
-      <input type="text" id="prof-name" value="${p.name}" />
 
-      <div class="grid2">
-        <div>
-          <label class="fl">Assigned Hazard Zone</label>
-          <select id="prof-zone">
-            ${['Zone 01', 'Zone 02', 'Zone 03', 'Zone 04'].map(z => `<option value="${z}" ${z === p.assigned_zone ? 'selected' : ''}>${z}</option>`).join('')}
-          </select>
-        </div>
-        <div>
-          <label class="fl">Operational Status</label>
-          <select id="prof-status">
-            <option value="ACTIVE" ${p.status === 'ACTIVE' ? 'selected' : ''}>ACTIVE</option>
-            <option value="REGISTERED" ${p.status === 'REGISTERED' ? 'selected' : ''}>REGISTERED / INACTIVE</option>
-          </select>
-        </div>
-      </div>
+    const numBadge = document.getElementById('slot-num-badge');
+    if (numBadge) numBadge.textContent = `SLOT 0${p.slot_number}`;
 
-      <div class="grid2">
-        <div>
-          <label class="fl">Gas Warning Threshold (%)</label>
-          <input type="text" id="th-gas-warn" value="${p.thresholds?.gas_warning || 30}" />
+    const formEl = document.getElementById('slot-editor-form');
+    if (formEl) {
+      formEl.innerHTML = `
+        <div class="form-group">
+          <label class="form-label">Profile Name</label>
+          <input type="text" class="form-input" id="prof-name" value="${p.name}" />
         </div>
-        <div>
-          <label class="fl">Gas Critical Limit (%)</label>
-          <input type="text" id="th-gas-crit" value="${p.thresholds?.gas_critical || 60}" />
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Assigned Hazard Zone</label>
+            <select class="form-select" id="prof-zone">
+              ${['Zone 01', 'Zone 02', 'Zone 03', 'Zone 04'].map(z => `<option value="${z}" ${z === p.assigned_zone ? 'selected' : ''}>${z}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Operational Status</label>
+            <select class="form-select" id="prof-status">
+              <option value="ACTIVE" ${p.status === 'ACTIVE' ? 'selected' : ''}>ACTIVE</option>
+              <option value="REGISTERED" ${p.status === 'REGISTERED' ? 'selected' : ''}>REGISTERED</option>
+              <option value="INACTIVE" ${p.status === 'INACTIVE' ? 'selected' : ''}>INACTIVE</option>
+            </select>
+          </div>
         </div>
-      </div>
-    `;
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Gas Warning Limit (%)</label>
+            <input type="number" class="form-input" id="th-gas-warn" value="${p.thresholds?.gas_warning || 25}" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Gas Critical Limit (%)</label>
+            <input type="number" class="form-input" id="th-gas-crit" value="${p.thresholds?.gas_critical || 55}" />
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Temp Warning Limit (°C)</label>
+            <input type="number" class="form-input" id="th-temp-warn" value="${p.thresholds?.temp_warning || 35}" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Temp Critical Limit (°C)</label>
+            <input type="number" class="form-input" id="th-temp-crit" value="${p.thresholds?.temp_critical || 48}" />
+          </div>
+        </div>
+      `;
+    }
 
     // Render sensor toggles
     const allSensors = ['gas', 'temperature', 'humidity', 'movement', 'camera'];
-    const togglesEl = document.getElementById('sensor-toggles');
+    const togglesEl = document.getElementById('sensor-toggle-list');
     const enabled = p.enabled_sensors || p.inputs || [];
 
-    togglesEl.innerHTML = allSensors.map(s => {
-      const isChecked = enabled.includes(s);
-      return `
-        <label style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:10px 14px;cursor:pointer">
-          <div>
-            <span style="font-weight:700;font-size:13px;text-transform:uppercase">${s} SENSOR</span>
-            <div style="font-size:11px;color:var(--text-dim)">Status: ${isChecked ? 'ACTIVE' : 'DISABLED'}</div>
-          </div>
-          <input type="checkbox" id="sens-${s}" ${isChecked ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--primary)" />
-        </label>`;
-    }).join('');
+    if (togglesEl) {
+      togglesEl.innerHTML = allSensors.map(s => {
+        const isChecked = enabled.includes(s);
+        return `
+          <label style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-subtle);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 14px;cursor:pointer">
+            <div>
+              <span style="font-weight:700;font-size:12px;text-transform:uppercase">${s} SENSOR</span>
+              <div style="font-size:11px;color:var(--text-muted)">State: ${isChecked ? 'ACTIVE' : 'DISABLED'}</div>
+            </div>
+            <input type="checkbox" id="sens-${s}" ${isChecked ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--primary)" />
+          </label>
+        `;
+      }).join('');
+    }
   }
 
   window.saveActiveSlot = async () => {
@@ -1146,10 +1657,10 @@ async function renderSettings(el) {
       enabled_sensors: selectedSensors,
       inputs: selectedSensors,
       thresholds: {
-        gas_warning: parseFloat(document.getElementById('th-gas-warn')?.value) || 30.0,
-        gas_critical: parseFloat(document.getElementById('th-gas-crit')?.value) || 60.0,
-        temp_warning: 35.0,
-        temp_critical: 50.0
+        gas_warning: parseFloat(document.getElementById('th-gas-warn')?.value) || 25.0,
+        gas_critical: parseFloat(document.getElementById('th-gas-crit')?.value) || 55.0,
+        temp_warning: parseFloat(document.getElementById('th-temp-warn')?.value) || 35.0,
+        temp_critical: parseFloat(document.getElementById('th-temp-crit')?.value) || 48.0
       }
     };
 
@@ -1159,14 +1670,14 @@ async function renderSettings(el) {
       body: JSON.stringify(payload)
     });
 
-    alert('Profile slot updated and saved to SQLite database.');
+    alert('Profile slot updated and persisted to SQLite WAL database.');
     loadProfiles();
   };
 
   loadProfiles();
 }
 
-
 // ── INITIAL BOOT ─────────────────────────────────────────────────────────────
+initClock();
 buildNav();
-renderPage('dashboard');
+renderCurrentPage();
