@@ -16,9 +16,11 @@ if not DATABASE_URL:
     DB_PATH = os.path.join(DB_DIR, "hazardguard.db")
     DATABASE_URL = f"sqlite:///{DB_PATH}"
 
-# Handle Render postgres:// vs postgresql:// compatibility
+# Handle Render postgres:// vs postgresql:// compatibility and default to psycopg2
 if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
+elif DATABASE_URL.startswith("postgresql://") and not DATABASE_URL.startswith("postgresql+"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
 
 is_sqlite = DATABASE_URL.startswith("sqlite")
 
